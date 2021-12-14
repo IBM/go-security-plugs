@@ -1,6 +1,7 @@
 package reverseproxyplugs
 
 import (
+	goLog "log"
 	"net/http"
 	"plugin"
 	"time"
@@ -25,12 +26,36 @@ type reverseProxyPlug interface {
 var reverseProxyPlugs []reverseProxyPlug
 var log Logger
 
-func LoadPlugs(l Logger, extensions []string) {
-	log = l
+type dLog struct{}
+
+func (dLog) Debugf(format string, args ...interface{}) {
+	goLog.Printf(format, args...)
+}
+func (dLog) Infof(format string, args ...interface{}) {
+	goLog.Printf(format, args...)
+}
+func (dLog) Warnf(format string, args ...interface{}) {
+	goLog.Printf(format, args...)
+}
+func (dLog) Errorf(format string, args ...interface{}) {
+	goLog.Printf(format, args...)
+}
+
+var defaultLog dLog
+
+func LoadPlugs(l Logger, extensions []string) int {
+	var log Logger
+
+	if log == nil {
+		log = defaultLog
+	} else {
+		log = l
+	}
+
 	for _, ext := range extensions {
 		p, err := plugin.Open(ext)
 		if err != nil {
-			log.Infof("Failed to open plugin: %s", ext)
+			log.Infof("Failed to open plugin: %s, ", ext, err)
 			continue
 		}
 
@@ -44,7 +69,8 @@ func LoadPlugs(l Logger, extensions []string) {
 		}
 
 	}
-	log.Infof("RPPlugs %v\n", reverseProxyPlugs)
+	log.Infof("Plugs %v\n", reverseProxyPlugs)
+	return len(reverseProxyPlugs)
 }
 
 func handleRequest(h http.Handler, p reverseProxyPlug) http.Handler {
