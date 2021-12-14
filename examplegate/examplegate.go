@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/davidhadas/knativesecuritygate/reverseproxyplugs"
+	"github.com/IBM/go-security-plugs/reverseproxyplugs"
 )
 
 const version string = "0.0.6"
