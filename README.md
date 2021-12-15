@@ -5,6 +5,10 @@ The [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/r
 
 The *security extensions* can then be introduced by third parties as shared libraries and developed seperatly from the go application. 
 
+
+![image](https://github.com/IBM/go-security-plugs/blob/main/rpplugs.png)
+
+
 ## reverseproxyplugs
 
 Both the extended go application and the *secuity extension* import the [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/reverseproxyplugs) package to gain access to the interfaces shared between the two and some utility code to help glue the application with the *secuity extensions*.
