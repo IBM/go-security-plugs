@@ -5,7 +5,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 
-	"github.com/IBM/go-security-plugs/reverseproxyplugs"
+	"github.com/davidhadas/knativesecuritygate/reverseproxyplugs"
 	"go.uber.org/zap"
 )
 
@@ -29,6 +29,8 @@ func main() {
 	reverseproxyplugs.LoadPlugs(log, env.extensions)
 	defer reverseproxyplugs.ShutdownPlugs()
 
+	var h http.Handler
+
 	url, err := url.Parse("http://127.0.0.1:8080")
 	if err != nil {
 		panic(err)
@@ -37,7 +39,7 @@ func main() {
 	proxy := httputil.NewSingleHostReverseProxy(url)
 
 	// Hook the request, response and error
-	h := reverseproxyplugs.HandleRequestPlugs(proxy)
+	h = reverseproxyplugs.HandleRequestPlugs(proxy)
 	proxy.ModifyResponse = reverseproxyplugs.HandleResponsePlugs
 	proxy.ErrorHandler = reverseproxyplugs.HandleErrorPlugs
 
