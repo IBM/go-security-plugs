@@ -3,6 +3,8 @@ package reverseproxyplugs
 import (
 	"net/http"
 	"testing"
+
+	"github.com/IBM/go-security-plugs/pluginterfaces"
 )
 
 /*
@@ -40,6 +42,19 @@ func (plug) RequestHook(w http.ResponseWriter, r *http.Request) error {
 
 var Plug plug
 */
+type countLog int
+
+func (countLog) Debugf(format string, args ...interface{}) {
+}
+func (countLog) Infof(format string, args ...interface{}) {
+}
+func (c countLog) Warnf(format string, args ...interface{}) {
+	c++
+}
+func (c countLog) Errorf(format string, args ...interface{}) {
+	c++
+}
+
 type countLog int
 
 func (countLog) Debugf(format string, args ...interface{}) {
