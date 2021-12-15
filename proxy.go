@@ -5,8 +5,16 @@ import (
 	"net/http/httputil"
 	"net/url"
 
+	"path/filepath"
+	"runtime"
+
 	"github.com/IBM/go-security-plugs/reverseproxyplugs"
 	"go.uber.org/zap"
+)
+
+var (
+	_, b, _, _ = runtime.Caller(0)
+	plugsDir   = filepath.Join(filepath.Dir(b), "plugs")
 )
 
 type config struct {
@@ -20,14 +28,12 @@ func main() {
 	defer logger.Sync() // flushes buffer, if any
 	log := logger.Sugar()
 
-	env := config{}
-	//env.extensions = []string{"plugs/examplegate/examplegate.so"}
-	env.extensions = []string{}
+	env := make(map[string]interface{})
 
 	// Load the list of shared libraries as defined by env.extensions
 	// Set the shared library to use the application log facilities
 	// Log facilities interface include: Debugf, Infof, Warnf, Errorf
-	reverseproxyplugs.LoadPlugs(log, env.extensions)
+	reverseproxyplugs.LoadPlugs(log, plugsDir, env)
 	defer reverseproxyplugs.ShutdownPlugs()
 
 	url, err := url.Parse("http://127.0.0.1:8080")

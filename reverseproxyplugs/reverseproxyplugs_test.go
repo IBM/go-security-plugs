@@ -40,13 +40,12 @@ func (plug) RequestHook(w http.ResponseWriter, r *http.Request) error {
 var Plug plug
 
 func TestLoadPlugs(t *testing.T) {
-	var ext []string
+	var ext map[string]interface{}
 	var numTests int
 	if numTests = LoadPlugs(nil, nil); numTests != 0 {
 		t.Errorf("LoadPlugs expected 0 returned %d\n", numTests)
 	}
 
-	ext = []string{}
 	if numTests = LoadPlugs(nil, ext); numTests != 0 {
 		t.Errorf("LoadPlugs expected 0 returned %d\n", numTests)
 	}

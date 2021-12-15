@@ -1,7 +1,6 @@
 package reverseproxyplugs
 
 import (
-	"fmt"
 	"io/ioutil"
 	goLog "log"
 	"net/http"
@@ -47,46 +46,32 @@ func (dLog) Errorf(format string, args ...interface{}) {
 
 var defaultLog dLog
 
-func LoadPlugs(l Logger, extensions []string) int {
-	if log == nil {
+func LoadPlugs(l Logger, plugDir string, config map[string]interface{}) int {
+	var extensions []string
+
+	if log = l; log == nil {
 		log = defaultLog
-	} else {
-		log = l
 	}
-	dirs, err := ioutil.ReadDir("plugs")
+
+	if plugDir == "" {
+
+		log.Infof("Plugs disabled - no plug directory provided\n")
+		return 0
+	}
+
+	dirs, err := ioutil.ReadDir(plugDir)
 	if err != nil {
 		panic(err)
 	}
 
 	for _, dirInfo := range dirs {
 		if dirInfo.IsDir() {
-			fmt.Println("Found plug in plugs dir: ", dirInfo.Name())
-			path := filepath.Join("plugs", dirInfo.Name(), dirInfo.Name()+".so")
+			log.Infof("Found a plug directory: %s\n", dirInfo.Name())
+			path := filepath.Join(plugDir, dirInfo.Name(), dirInfo.Name()+".so")
 			extensions = append(extensions, path)
 		}
 	}
-	/*
-		files, _ := ioutil.ReadDir("plugs")
-		for _, file := range files {
-			if file.Name() != "extpoints.go" && !strings.HasSuffix(file.Name(), "_ext.go") {
-				path := filepath.Join(packagePath, file.Name())
-				log.Printf("Processing file %s", path)
-				packageName, ifaces = processFile(path)
-				if len(ifacesAllowed) > 0 {
-					var ifacesFiltered []string
-					for _, iface := range ifaces {
-						_, allowed := ifacesAllowed[iface]
-						if allowed {
-							ifacesFiltered = append(ifacesFiltered, iface)
-						}
-					}
-					ifaces = ifacesFiltered
-				}
-				log.Printf("Found interfaces: %#v", ifaces)
-				ifacesAll = append(ifacesAll, ifaces...)
-			}
-		}
-	*/
+
 	for _, ext := range extensions {
 		p, err := plugin.Open(ext)
 		if err != nil {
@@ -103,8 +88,8 @@ func LoadPlugs(l Logger, extensions []string) int {
 			log.Infof("Cant find Plug function in plugin: %s", ext)
 			continue
 		}
-
 	}
+
 	log.Infof("Plugs %v\n", reverseProxyPlugNames)
 	return len(reverseProxyPlugs)
 }
