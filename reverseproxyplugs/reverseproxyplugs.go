@@ -7,27 +7,13 @@ import (
 	"path/filepath"
 	"plugin"
 	"time"
+
+	"github.com/IBM/go-security-plugs/pluginterfaces"
 )
 
-type Logger interface {
-	Debugf(format string, args ...interface{})
-	Infof(format string, args ...interface{})
-	Warnf(format string, args ...interface{})
-	Errorf(format string, args ...interface{})
-}
-
-type reverseProxyPlug interface {
-	Initialize(Logger)
-	RequestHook(http.ResponseWriter, *http.Request) error
-	ResponseHook(*http.Response) error
-	ErrorHook(http.ResponseWriter, *http.Request, error)
-	Shutdown()
-	PlugName() string
-}
-
-var reverseProxyPlugs []reverseProxyPlug
+var reverseProxyPlugs []pluginterfaces.ReverseProxyPlug
 var reverseProxyPlugNames []string
-var log Logger
+var log pluginterfaces.Logger
 
 type dLog struct{}
 
@@ -46,7 +32,7 @@ func (dLog) Errorf(format string, args ...interface{}) {
 
 var defaultLog dLog
 
-func LoadPlugs(l Logger, plugDir string, config map[string]interface{}) int {
+func LoadPlugs(l pluginterfaces.Logger, plugDir string, config map[string]interface{}) int {
 	var extensions []string
 
 	if log = l; log == nil {
@@ -61,7 +47,8 @@ func LoadPlugs(l Logger, plugDir string, config map[string]interface{}) int {
 
 	dirs, err := ioutil.ReadDir(plugDir)
 	if err != nil {
-		panic(err)
+		log.Infof("Failed too open dir %s: %v", plugDir, err)
+		return 0
 	}
 
 	for _, dirInfo := range dirs {
@@ -75,17 +62,17 @@ func LoadPlugs(l Logger, plugDir string, config map[string]interface{}) int {
 	for _, ext := range extensions {
 		p, err := plugin.Open(ext)
 		if err != nil {
-			log.Infof("Failed to open plugin: %s, ", ext, err)
+			log.Infof("Failed to open plugin: %s, %v", ext, err)
 			continue
 		}
 
 		if f, err := p.Lookup("Plug"); err == nil {
-			p := f.(reverseProxyPlug)
+			p := f.(pluginterfaces.ReverseProxyPlug)
 			p.Initialize(log)
 			reverseProxyPlugs = append(reverseProxyPlugs, p)
 			reverseProxyPlugNames = append(reverseProxyPlugNames, p.PlugName())
 		} else {
-			log.Infof("Cant find Plug function in plugin: %s", ext)
+			log.Infof("Cant find Plug function in plugin: %s: %v", ext, err)
 			continue
 		}
 	}
@@ -94,7 +81,7 @@ func LoadPlugs(l Logger, plugDir string, config map[string]interface{}) int {
 	return len(reverseProxyPlugs)
 }
 
-func handleRequest(h http.Handler, p reverseProxyPlug) http.Handler {
+func handleRequest(h http.Handler, p pluginterfaces.ReverseProxyPlug) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		if p.RequestHook(w, r) == nil {
