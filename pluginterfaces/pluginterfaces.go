@@ -16,4 +16,6 @@ type ReverseProxyPlug interface {
 	ErrorHook(http.ResponseWriter, *http.Request, error)
 	Shutdown()
 	PlugName() string
+	PlugVersion() string
+	PlugLogger() Logger
 }

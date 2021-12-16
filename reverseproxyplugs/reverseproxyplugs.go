@@ -68,7 +68,9 @@ func LoadPlugs(l pluginterfaces.Logger, plugDir string, config map[string]interf
 
 		if f, err := p.Lookup("Plug"); err == nil {
 			p := f.(pluginterfaces.ReverseProxyPlug)
+			log.Infof("Plug Initizalize 1: %v %v: %v", p.PlugName(), p.PlugVersion(), p.PlugLogger())
 			p.Initialize(log)
+			log.Infof("Plug Initizalize 2: %v %v: %v", p.PlugName(), p.PlugVersion(), p.PlugLogger())
 			reverseProxyPlugs = append(reverseProxyPlugs, p)
 			reverseProxyPlugNames = append(reverseProxyPlugNames, p.PlugName())
 		} else {
@@ -84,6 +86,8 @@ func LoadPlugs(l pluginterfaces.Logger, plugDir string, config map[string]interf
 func handleRequest(h http.Handler, p pluginterfaces.ReverseProxyPlug) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
+		log.Infof("Starting Request-Plug %s", p.PlugName())
+		log.Infof("Plug RequestHook: %v %v: %v", p.PlugName(), p.PlugVersion(), p.PlugLogger())
 		if p.RequestHook(w, r) == nil {
 			elapsed := time.Since(start)
 			log.Infof("Request-Plug %s took %s", p.PlugName(), elapsed.String())
@@ -102,6 +106,7 @@ func HandleRequestPlugs(h http.Handler) http.Handler {
 func HandleResponsePlugs(resp *http.Response) error {
 	for _, p := range reverseProxyPlugs {
 		start := time.Now()
+		log.Infof("Plug ResponseHook: %v %v: %v", p.PlugName(), p.PlugVersion(), p.PlugLogger())
 		p.ResponseHook(resp)
 		elapsed := time.Since(start)
 		log.Infof("Response-Plug %s took %s", p.PlugName(), elapsed.String())

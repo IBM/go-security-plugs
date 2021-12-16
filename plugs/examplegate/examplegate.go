@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/IBM/go-security-plugs/pluginterfaces"
@@ -15,45 +16,55 @@ type plug struct {
 
 var Plug plug = plug{version: version}
 
-func (p plug) Initialize(l pluginterfaces.Logger) {
-	p.log = l
-	p.log.Infof("ExampleGate: Initializing - version %v\n", p.version)
+func (plug) Initialize(l pluginterfaces.Logger) {
+	fmt.Println("ExampleGate Initilizing... : ", Plug.log, l)
+	Plug.log = l
+	fmt.Println("ExampleGate Initilizing... : ", Plug.log, l)
+	Plug.log.Infof("ExampleGate: Initializing - version %v\n", Plug.version)
 }
 
-func (p plug) Shutdown() {
-	p.log.Infof("ExampleGate: Shutdown")
+func (plug) Shutdown() {
+	Plug.log.Infof("ExampleGate: Shutdown")
 }
 
-func (p plug) PlugName() string {
+func (plug) PlugName() string {
 	return "ExampleGate"
 }
 
+func (plug) PlugVersion() string {
+	return Plug.version
+}
+
+func (plug) PlugLogger() pluginterfaces.Logger {
+	return Plug.log
+}
+
 //ErrorHook(http.ResponseWriter, *http.Request, error)
-func (p plug) ErrorHook(w http.ResponseWriter, req *http.Request, e error) {
-	p.log.Infof("ExampleGate: ErrorHook started")
+func (plug) ErrorHook(w http.ResponseWriter, req *http.Request, e error) {
+	Plug.log.Infof("ExampleGate: ErrorHook started")
 }
 
 //ResponseHook(*http.Response) error
-func (p plug) ResponseHook(resp *http.Response) error {
-	p.log.Infof("ExampleGate: ResponseHook started")
+func (plug) ResponseHook(resp *http.Response) error {
+	Plug.log.Infof("ExampleGate: ResponseHook started")
 
 	for name, values := range resp.Header {
 		// Loop over all values for the name.
 		for _, value := range values {
-			p.log.Infof("ExampleGate Response Header: %s: %s", name, value)
+			Plug.log.Infof("ExampleGate Response Header: %s: %s", name, value)
 		}
 	}
 	return nil
 }
 
 //RequestHook(http.ResponseWriter, *http.Request) error
-func (p plug) RequestHook(w http.ResponseWriter, r *http.Request) error {
-	p.log.Infof("ExampleGate: RequestHook started")
+func (plug) RequestHook(w http.ResponseWriter, r *http.Request) error {
+	Plug.log.Infof("ExampleGate: RequestHook started")
 
 	for name, values := range r.Header {
 		// Loop over all values for the name.
 		for _, value := range values {
-			p.log.Infof("ExampleGate Request Header: %s: %s", name, value)
+			Plug.log.Infof("ExampleGate Request Header: %s: %s", name, value)
 		}
 	}
 	return nil
