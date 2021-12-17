@@ -1,4 +1,4 @@
-# BadVersionGate
+# BadVersionPlug
 
 This gate has a mismatching versions comapred to the reverseproxyplugs
 
