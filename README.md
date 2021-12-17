@@ -1,9 +1,11 @@
 # go-security-plugs
 Plugs4Security
 
-The [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/reverseproxyplugs) package enable extending a go application using [the standard go reverseproxy](https://go.dev/src/net/http/httputil/reverseproxy.go) with one or more *secuity extensions*.
+The [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/reverseproxyplugs) package enable safely extending a go application using [the standard go reverseproxy](https://go.dev/src/net/http/httputil/reverseproxy.go) with one or more *secuity extensions*. The task of this packag eis to not only load extensions, but also recover from any panic situations and handle all errors that can be thrown upon it from extensions. It is meant to keep the go application safe from harm done by extensions to a certain degree. It does not protect the application from extensions which: use excasive memory, cpu or other system resources (file descriptors etc.). 
 
-The *security extensions* can then be introduced by third parties as shared libraries and developed seperatly from the go application. 
+*Security extensions* can then be introduced by third parties as shared libraries and developed seperatly from the go application. 
+
+This allows loading extensions as the go application starts based on configuration as examplified in the example [**proxy**](https://github.com/IBM/go-security-plugs/tree/proxy.go)
 
 
 ![image](https://github.com/IBM/go-security-plugs/blob/main/security-plugs.png)
