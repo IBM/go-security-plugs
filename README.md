@@ -19,7 +19,7 @@ An application looking to extend reverseproxy use the [**reverseproxyplugs**](ht
 
 [**proxy**](https://github.com/IBM/go-security-plugs/tree/proxy.go) is an example of a go application that uses the go reverseproxy and enable a unified and simple interface for security extensions by importing and using [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/reverseproxyplugs).
 
-[**examplegate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/examplegate) is an example third party secuity enhancement which import and use [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/reverseproxyplugs) to be able to hook go application that expose this interface.
+[**examplegate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/examplegate) is an example third party secuity enhancement which import and use [**pluginterfaces**](https://github.com/IBM/go-security-plugs/tree/main/pluginterfaces) and can be loaded by the [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/reverseproxyplugs).
 
 When using go plugs one must ensure that the shared library uses the same package versions as the application. To ensure all plugs use the same package versions as your main app:
 1. Clone the plugs into the plugs directory of yout app (as shown here with the [**examplegate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/examplegate) plug).
