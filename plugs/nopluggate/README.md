@@ -1,6 +1,6 @@
 # NoPlugGate
 
-This gate has a Plug that does not meet the plug interface as indicated by pluginterfaces
+This gate does not have a Plug at all!
 
 It cant be loaded
 
