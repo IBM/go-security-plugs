@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/IBM/go-security-plugs/pluginterfaces"
@@ -12,14 +11,14 @@ const version string = "0.0.7"
 type plug struct {
 	version string
 	log     pluginterfaces.Logger
+	config  map[string]interface{}
 }
 
 var Plug plug = plug{version: version}
 
-func (plug) Initialize(l pluginterfaces.Logger) {
-	fmt.Println("ExampleGate Initilizing... : ", Plug.log, l)
+func (plug) Initialize(l pluginterfaces.Logger, c map[string]interface{}) {
 	Plug.log = l
-	fmt.Println("ExampleGate Initilizing... : ", Plug.log, l)
+	Plug.config = c
 	Plug.log.Infof("ExampleGate: Initializing - version %v\n", Plug.version)
 }
 

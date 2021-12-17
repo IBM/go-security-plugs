@@ -10,7 +10,7 @@ type Logger interface {
 }
 
 type ReverseProxyPlug interface {
-	Initialize(Logger)
+	Initialize(Logger, map[string]interface{})
 	RequestHook(http.ResponseWriter, *http.Request) error
 	ResponseHook(*http.Response) error
 	ErrorHook(http.ResponseWriter, *http.Request, error)
