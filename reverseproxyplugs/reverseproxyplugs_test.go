@@ -55,11 +55,6 @@ func TestMain(m *testing.M) {
 }
 func TestLoadPlugs(t *testing.T) {
 	var numTests int
-	if numTests = LoadPlugs(testlog, testconfig); numTests != 4 {
-		t.Errorf("LoadPlugs expected 24returned %d\n", numTests)
-	}
-	t.Errorf("LoadPlugs")
-	return
 
 	if numTests = LoadPlugs(nil, nil); numTests != 2 {
 		t.Errorf("LoadPlugs expected 2 returned %d\n", numTests)

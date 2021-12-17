@@ -126,11 +126,6 @@ func handleRequest(h http.Handler, p pluginterfaces.ReverseProxyPlug) http.Handl
 }
 
 func HandleRequestPlugs(h http.Handler) http.Handler {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Warnf("Recovered from panic during HandleRequestPlugs!\n\tOne or more plugs may be skipped\n\tRecover: %v", r)
-		}
-	}()
 	for _, p := range reverseProxyPlugs {
 		h = handleRequest(h, p)
 	}
