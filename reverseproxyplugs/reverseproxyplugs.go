@@ -75,27 +75,27 @@ func LoadPlugs(l pluginterfaces.Logger, c map[string]interface{}) (ret int) {
 	case []string:
 		plugins = val.([]string)
 	}
-	for _, ext := range plugins {
-		p, err := plugin.Open(ext)
+	for _, plugPkgPath := range plugins {
+		plugPkg, err := plugin.Open(plugPkgPath)
 		if err != nil {
-			log.Infof("Plugin %s skipped - Failed to open plugin. Err: %v", ext, err)
+			log.Infof("Plugin %s skipped - Failed to open plugin. Err: %v", plugPkgPath, err)
 			continue
 		}
 
-		if f, err := p.Lookup("Plug"); err == nil {
-			switch valType := f.(type) {
+		if plugSymbol, err := plugPkg.Lookup("Plug"); err == nil {
+			switch valType := plugSymbol.(type) {
 			case pluginterfaces.ReverseProxyPlug:
-				p := f.(pluginterfaces.ReverseProxyPlug)
+				p := plugSymbol.(pluginterfaces.ReverseProxyPlug)
 				p.Initialize(log, config)
 				reverseProxyPlugs = append(reverseProxyPlugs, p)
 				reverseProxyPlugNames = append(reverseProxyPlugNames, p.PlugName())
 				ret++
 			default:
-				log.Infof("Plugin %s skipped - Plug symbol is of ilegal type %T,  %v", ext, f, valType)
+				log.Infof("Plugin %s skipped - Plug symbol is of ilegal type %T,  %v", plugPkgPath, plugSymbol, valType)
 			}
 
 		} else {
-			log.Infof("Cant find Plug symbol in plugin: %s: %v", ext, err)
+			log.Infof("Cant find Plug symbol in plugin: %s: %v", plugPkgPath, err)
 			continue
 		}
 	}
@@ -108,12 +108,12 @@ func handleRequest(h http.Handler, p pluginterfaces.ReverseProxyPlug) http.Handl
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Warnf("Recovered from panic during handleRequest!\n\tOne or more plugs may be skipped\n\tRecover: %v", r)
+				log.Infof("Recovered from panic during handleRequest!\n")
+				//log.Warnf("Recovered from panic during handleRequest!\n\tOne or more plugs may be skipped\n\tRecover: %v", r)
 			}
 		}()
 		start := time.Now()
-		log.Debugf("Starting Request-Plug %s", p.PlugName())
-		log.Debugf("Plug RequestHook: %v %v: %v", p.PlugName(), p.PlugVersion(), p.PlugLogger())
+		log.Debugf("Plug %s %s RequestHook", p.PlugName(), p.PlugVersion())
 		e := p.RequestHook(w, r)
 		elapsed := time.Since(start)
 		log.Debugf("Request-Plug %s took %s", p.PlugName(), elapsed.String())
@@ -121,6 +121,7 @@ func handleRequest(h http.Handler, p pluginterfaces.ReverseProxyPlug) http.Handl
 			h.ServeHTTP(w, r)
 		} else {
 			log.Infof("Request-Plug returned an error %v", e)
+			w.WriteHeader(http.StatusForbidden)
 		}
 	})
 }
@@ -159,12 +160,14 @@ func HandleErrorPlugs(w http.ResponseWriter, r *http.Request, e error) {
 			log.Warnf("Recovered from panic during HandleErrorPlugs!\n\tOne or more plugs may be skipped\n\tRecover: %v", r)
 		}
 	}()
+	log.Infof("Error-Plug received an error %v", e)
 	for _, p := range reverseProxyPlugs {
 		start := time.Now()
 		p.ErrorHook(w, r, e)
 		elapsed := time.Since(start)
 		log.Infof("Error-Plug %s took %s", p.PlugName(), elapsed.String())
 	}
+	w.WriteHeader(http.StatusForbidden)
 }
 
 func UnloadPlugs() {

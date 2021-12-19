@@ -1,7 +1,11 @@
 package main
 
 import (
-	"net/http"
+	"errors"
+	"fmt"
+	"net/http/httptest"
+	"os"
+	"reflect"
 	"testing"
 
 	"github.com/IBM/go-security-plugs/pluginterfaces"
@@ -17,76 +21,56 @@ func (d dLog) Errorf(format string, args ...interface{}) {}
 
 var defaultLog dLog
 var testconfig map[string]interface{}
+var p plug
+
+func TestMain(m *testing.M) {
+	p.Initialize(defaultLog, testconfig)
+	code := m.Run()
+	os.Exit(code)
+}
 
 func Test_plug_Initialize(t *testing.T) {
-	type fields struct {
-		version string
-		log     pluginterfaces.Logger
-	}
 	type args struct {
 		l pluginterfaces.Logger
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
+		name string
+		args args
 	}{
 		// TODO: Add test cases.
-		{"Log args", fields{"myVer", nil}, args{defaultLog}},
+		{"Log args", args{defaultLog}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := plug{
-				version: tt.fields.version,
-				log:     tt.fields.log,
-			}
 			p.Initialize(tt.args.l, testconfig)
 		})
 	}
 }
 
 func Test_plug_Shutdown(t *testing.T) {
-	type fields struct {
-		version string
-		log     pluginterfaces.Logger
-	}
 	tests := []struct {
-		name   string
-		fields fields
+		name string
 	}{
 		// TODO: Add test cases.
-		{"", fields{"myVer", defaultLog}},
+		{""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := plug{
-				version: tt.fields.version,
-				log:     tt.fields.log,
-			}
 			p.Shutdown()
 		})
 	}
 }
 
 func Test_plug_PlugName(t *testing.T) {
-	type fields struct {
-		version string
-		log     pluginterfaces.Logger
-	}
 	tests := []struct {
-		name   string
-		fields fields
-		want   string
+		name string
+		want string
 	}{
 		// TODO: Add test cases.
-		{"", fields{"myVer", defaultLog}, "ExampleGate"},
+		{"", "ExampleGate"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := plug{
-				version: tt.fields.version,
-				log:     tt.fields.log,
-			}
 			if got := p.PlugName(); got != tt.want {
 				t.Errorf("plug.PlugName() = %v, want %v", got, tt.want)
 			}
@@ -95,29 +79,20 @@ func Test_plug_PlugName(t *testing.T) {
 }
 
 func Test_plug_ResponseHook(t *testing.T) {
-	type fields struct {
-		version string
-		log     pluginterfaces.Logger
-	}
-	type args struct {
-		resp *http.Response
-	}
 	tests := []struct {
 		name    string
-		fields  fields
-		args    args
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-
+		{"", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := plug{
-				version: tt.fields.version,
-				log:     tt.fields.log,
-			}
-			if err := p.ResponseHook(tt.args.resp); (err != nil) != tt.wantErr {
+			resp := httptest.NewRecorder()
+			fmt.Fprintf(resp, "Hi there!")
+			r := resp.Result()
+			r.Header.Set("name", "val")
+			if err := p.ResponseHook(r); (err != nil) != tt.wantErr {
 				t.Errorf("plug.ResponseHook() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -125,31 +100,82 @@ func Test_plug_ResponseHook(t *testing.T) {
 }
 
 func Test_plug_RequestHook(t *testing.T) {
-	type fields struct {
-		version string
-		log     pluginterfaces.Logger
-	}
-	type args struct {
-		w http.ResponseWriter
-		r *http.Request
-	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name       string
+		wantErr    bool
+		statusCode int
 	}{
 		// TODO: Add test cases.
+		{"", false, 200},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := plug{
-				version: tt.fields.version,
-				log:     tt.fields.log,
-			}
-			if err := p.RequestHook(tt.args.w, tt.args.r); (err != nil) != tt.wantErr {
+			var p plug
+			p.Initialize(defaultLog, testconfig)
+			req := httptest.NewRequest("GET", "/some/path", nil)
+			req.Header.Set("name", "value")
+			resp := httptest.NewRecorder()
+			if err := p.RequestHook(resp, req); (err != nil) != tt.wantErr {
 				t.Errorf("plug.RequestHook() error = %v, wantErr %v", err, tt.wantErr)
 			}
+			if resp.Code != tt.statusCode {
+				t.Errorf("Want status '%d', got '%d'", tt.statusCode, resp.Code)
+			}
+
+			//if strings.TrimSpace(resp.Body.String()) != tt.want {
+			//	t.Errorf("Want '%s', got '%s'", tt.want, resp.Body)
+			//}
+		})
+	}
+}
+
+func Test_plug_PlugLogger(t *testing.T) {
+	tests := []struct {
+		name string
+		want pluginterfaces.Logger
+	}{
+		// TODO: Add test cases.
+		{"", defaultLog},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := p.PlugLogger(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("plug.PlugLogger() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_plug_PlugVersion(t *testing.T) {
+	tests := []struct {
+		name string
+		want string
+	}{
+		// TODO: Add test cases.
+		{"", version},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := p.PlugVersion(); got != tt.want {
+				t.Errorf("plug.PlugVersion() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_plug_ErrorHook(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		// TODO: Add test cases.
+		{""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/some/path", nil)
+			resp := httptest.NewRecorder()
+			e := errors.New("TestError")
+			p.ErrorHook(resp, req, e)
 		})
 	}
 }

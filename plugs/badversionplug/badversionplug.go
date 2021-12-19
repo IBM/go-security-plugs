@@ -17,7 +17,7 @@ type plug struct {
 }
 
 func init() {
-	log.Println("This is BadVersionGate speaking: My go version is ", runtime.Version())
+	log.Println("This is BadVersionGate speaking: My go Version is ", runtime.Version())
 }
 
 var Plug plug = plug{version: version}

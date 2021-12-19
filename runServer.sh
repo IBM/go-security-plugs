@@ -2,6 +2,6 @@
 
 echo "Run Server"
 cd server
-go run .&
+go run .
 
 
