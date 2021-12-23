@@ -8,9 +8,11 @@ The package not only load extensions, but also recover from any panic situations
 
 Using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs), *secuity extensions* may:
 
-1. Block a request before it reaches the server 
-2. Block a response headers before the headers are returned to the client
-3. Asynchroniously cancel any request previously approved. Canceling the request will result in the clinet connection to bother client and the server being closed. 
+1. Block a request before it reaches the server. Canceling the reqeust will result in the connection tothe client being closed and teh request never reaching the server.  The client will receive a 502 response code.
+
+2. Block the response before it is returned to the client. Canceling the response will result in the connection to both the client and the server being closed and no data will be transfered from the server to the client. The client will receive a 502 response code.
+
+3. Asynchroniously cancel any request previously approved. Canceling the request will result in the connection to both the client and the server being closed and no additional data (beyond what was already delivered prior to request cancelation) will be transfered from the server to the client. If the client has not received a previous response code, the client will receive a 502 response code. Note that the client may have already received a different response code (and potentially some response data) prior to cancellation. 
 
 ![image](https://github.com/IBM/go-security-plugs/blob/main/rtplugins.png)
 
