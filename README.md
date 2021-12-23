@@ -6,6 +6,12 @@ The [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs) pa
 
 The package not only load extensions, but also recover from any panic situations and handle all errors  from extensions. It is meant to keep the go application safe from harm done by extensions to a certain degree. It does not protect the application from extensions which: use excasive memory, cpu or other system resources (file descriptors etc.). 
 
+Using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs), *secuity extensions* may:
+
+1. Block a request before it reaches the server 
+2. Block a response headers before the headers are returned to the client
+3. Asynchroniously cancel any request previously approved. Canceling the request will result in the clinet connection to bother client and the server being closed. 
+
 ![image](https://github.com/IBM/go-security-plugs/blob/main/rtplugins.png)
 
 *Security extensions* can then be introduced by third parties as shared libraries and developed seperatly from the go application. 
@@ -32,7 +38,7 @@ An application looking to extend reverseproxy (or any other http client) use the
 
 [**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) is an example third party secuity enhancement which import and use [**pluginterfaces**](https://github.com/IBM/go-security-plugs/tree/main/pluginterfaces) and can be loaded by the [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs).
 
-[**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) demonstrates how a request can eb canceled asynchrniously using the security extension. The code allows requests to last for no more than 3 seconds. Once 3 seconds pass, it asynchrniously cancels the request. Note that a when the request is canceled, it may be already processed at the server, potentially it may be sending data after response headers were already sent or it may be perfoming some processing prior to sending response headers, or it may be completed and a race is occuring between its completion and the cancel event. The creteria used for cancellation and the exact timing is extension specific. 
+[**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) demonstrates how a request can be canceled asynchrniously using a security extension. The code allows requests to last for no more than 3 seconds. Once 3 seconds pass, it asynchrniously cancels the request. Note that a when the request is canceled, it may be already processed at the server, potentially it may be sending data after response headers were already sent or it may be perfoming some processing prior to sending response headers, or it may be completed and a race is occuring between its completion and the cancel event. The creteria used for cancellation and the exact timing is extension specific. 
 
 # How to use
 
