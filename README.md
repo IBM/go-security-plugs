@@ -8,11 +8,11 @@ The package not only load extensions, but also recover from any panic situations
 
 Using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs), *secuity extensions* may:
 
-1. Block the request before it reaches the server. Blocking the reqeust will result in the connection to the client being closed.  The client will receive a 502 response code. The request will never reach the server.
+1. ___Block the request___ before it reaches the server. Blocking the reqeust will result in the connection to the client being closed.  The client will receive a 502 response code. The request will never reach the server.
 
-2. Block the response from the server before it is returned to the client. Blocking the response will result in the connection to the client being closed. The client will receive a 502 response code and no data will be transfered from the server to the client. The connection to the server will also be closed, signaling to the server that the client disconnected and no further service is required. 
+2. ___Block the response___ from the server before it is returned to the client. Blocking the response will result in the connection to the client being closed. The client will receive a 502 response code and no data will be transfered from the server to the client. The connection to the server will also be closed, signaling to the server that the client disconnected and no further service is required. 
 
-3. Asynchroniously cancel a request while it is being processed by the server. Canceling the request will result in the connection to the client and server being closed. No additional data (beyond what was already delivered prior to request cancelation) will be further delivered from the server to the client. There are two cases to consider:
+3. ___Asynchroniously cancel a request___ while it is being processed by the server. Canceling the request will result in the connection to the client and server being closed. No additional data (beyond what was already delivered prior to request cancelation) will be further delivered from the server to the client. There are two cases to consider:
 
     1. The request was cancled __before__ the response code was sent to the client. In this case, the client will now receive a 502 response code.  Closing the connection to the server will signal to the server that the client disconnected and no further service is required.
 
