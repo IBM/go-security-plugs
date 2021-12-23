@@ -12,7 +12,12 @@ Using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs),
 
 2. Block the response from the server before it is returned to the client. Blocking the response will result in the connection to the client being closed. The client will receive a 502 response code and no data will be transfered from the server to the client. The connection to the server will also be closed, signaling to the server that the client disconnected and no further service is required. 
 
-3. Asynchroniously cancel a request while it si being processed by the server. Canceling the request will result in the connection to the client being closed and no additional data (beyond what was already delivered prior to request cancelation) will be transfered from the server to the client. If the client had not received a previous response code, the client will now receive a 502 response code. Note that the client may have already received a different response code (and potentially some response data) prior to cancellation in which case closing the connection to the client will signal to the client taht yhe server aborted the service. The connection to the server will also be closed, signaling to the server that the client disconnected and no further service is required. 
+3. Asynchroniously cancel a request while it is being processed by the server. Canceling the request will result in the connection to the client and server being closed. No additional data (beyond what was already delivered prior to request cancelation) will be further delivered from the server to the client. There are two cases to consider:
+
+    1. The request was cancled __before__ the response code was sent to the client. In this case, the client will now receive a 502 response code.  Closing the connection to the server will signal to the server that the client disconnected and no further service is required.
+
+    2.  The request was cancled __after__ the response code was sent to the client. In this case, closing the connection to the client will signal to the client that the server aborted the service. Closing the connection to the server will signal to the server that the client disconnected and no further service is required. 
+
 
 ![image](https://github.com/IBM/go-security-plugs/blob/main/rtplugins.png)
 
