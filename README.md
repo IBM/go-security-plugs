@@ -25,14 +25,10 @@ Using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs),
 
 This allows loading extensions as the go application starts based on configuration as examplified in the example [**proxy**](https://github.com/IBM/go-security-plugs/tree/proxy.go)
 
-An older [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/reverseproxyplugs) that does not use the RoundTripper interfce is also included in this repository. 
-
-![image](https://github.com/IBM/go-security-plugs/blob/main/reverseproxyplugs.png)
-
 
 ## pluginterfaces
 
-Both the the [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/reverseproxyplugs) and the *secuity extension* import the [**pluginterfaces**](https://github.com/IBM/go-security-plugs/tree/main/pluginterfaces) package to gain access to the interfaces shared between the two.
+Both the the  [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs) and the *secuity extension* import the [**pluginterfaces**](https://github.com/IBM/go-security-plugs/tree/main/pluginterfaces) package to gain access to the interfaces shared between the two.
 
 
 ## rtplugs
@@ -93,9 +89,12 @@ The reqeust headers  "X-Block-Req", "X-Block-Resp",  "X-Block-Async" control the
 
 ## reverseproxyplugs
 
-An older version extended the reverseproxy without using the roundtripper. This [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/reverseproxyplugs) option has no apperent advetages over the new mechanism that uses the RoundTripper and is left here for reference only. 
+An older [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/reverseproxyplugs) that does not use the RoundTripper interfce is also included in this repository. 
 
-To use it uncommend the proxy's commented lines that uses the [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/reverseproxyplugs). 
+![image](https://github.com/IBM/go-security-plugs/blob/main/reverseproxyplugs.png)
+
+
+The [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/reverseproxyplugs) has no apperent advetages over the new mechanism that uses the RoundTripper and is left here fully functional for reference and as a second option. The use of this option is included in commented lines in the [**proxy**](https://github.com/IBM/go-security-plugs/tree/proxy.go) code. 
 
    
 
