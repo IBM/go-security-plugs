@@ -51,18 +51,26 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	time.Sleep(sleep)
 	fmt.Fprintf(w, "<H1>SampleServer</H1>\n")
-	fmt.Fprintf(w, "<p>Shalom, this request will takes %0.2f seconds to responsd</p>\n", float32(int(sleep)+int(sleepStep)*sleepNumSteps)/1e9)
+	fmt.Fprintf(w, "<p>Shalom, this request will take %0.2f seconds to respond</p>\n", float32(int(sleep)+int(sleepStep)*sleepNumSteps)/1e9)
+
+	ctx := r.Context()
 
 	if int(sleepStep)*sleepNumSteps > 0 {
+	Exit:
 		for i := 0; i < sleepNumSteps; i++ {
-			time.Sleep(sleepStep)
-			fmt.Fprintf(w, "<p>Elapsed time: %0.2f secs</p>\n", float32(int(sleep)+int(sleepStep)*i)/1e9)
+			select {
+			case <-ctx.Done():
+				fmt.Printf("Request Conext is Done %s\n", ctx.Err())
+				break Exit
+			case <-time.After(sleepStep):
+				fmt.Fprintf(w, "<p>Elapsed time: %0.2f secs</p>\n", float32(int(sleep)+int(sleepStep)*i)/1e9)
+			}
 		}
 	}
 	fmt.Fprintf(w, "<p>Elapsed time: %0.2f secs</p>\n", float32(int(sleep)+int(sleepStep)*sleepNumSteps)/1e9)
 	fmt.Fprintf(w, "<p>SampleServer is now done sending!</p>\n")
 	fmt.Fprintf(w, "<p>See ya!</p>\n")
-	fmt.Printf("SampleServer finished processing the received request\n")
+	fmt.Printf("\nSampleServer finished processing the received request\n\n")
 
 }
 

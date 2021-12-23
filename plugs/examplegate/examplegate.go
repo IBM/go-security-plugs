@@ -14,15 +14,13 @@ type plug struct {
 	name    string
 	version string
 	log     pluginterfaces.Logger
-	config  map[string]interface{}
 	// Add here any other state the extension needs
 }
 
 var Plug plug = plug{version: version, name: name}
 
-func (plug) Initialize(l pluginterfaces.Logger, c map[string]interface{}) {
+func (plug) Initialize(l pluginterfaces.Logger) {
 	Plug.log = l
-	Plug.config = c
 	Plug.log.Infof("%s: Initializing - version %v\n", Plug.name, Plug.version)
 }
 
@@ -36,10 +34,6 @@ func (plug) PlugName() string {
 
 func (plug) PlugVersion() string {
 	return Plug.version
-}
-
-func (plug) PlugLogger() pluginterfaces.Logger {
-	return Plug.log
 }
 
 //ErrorHook(http.ResponseWriter, *http.Request, error)

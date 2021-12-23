@@ -40,10 +40,6 @@ func (plug) PlugVersion() string {
 	return Plug.version
 }
 
-func (plug) PlugLogger() pluginterfaces.Logger {
-	return Plug.log
-}
-
 //ErrorHook(http.ResponseWriter, *http.Request, error)
 func (plug) ErrorHook(w http.ResponseWriter, req *http.Request, e error) {
 	Plug.log.Infof("BadVersionGate: ErrorHook started")

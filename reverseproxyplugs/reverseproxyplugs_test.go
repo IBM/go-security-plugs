@@ -1,7 +1,6 @@
 package reverseproxyplugs
 
 import (
-	"errors"
 	"net/http"
 	"os"
 	"testing"
@@ -21,40 +20,54 @@ func (c countLog) Errorf(format string, args ...interface{}) {
 }
 
 var testlog countLog
-var testconfig map[string]interface{} = make(map[string]interface{})
-var emptytestconfig map[string]interface{} = make(map[string]interface{})
-var falsetestconfig map[string]interface{} = make(map[string]interface{})
-var nokeyconfig map[string]interface{} = make(map[string]interface{})
+var testconfig []string
+var emptytestconfig []string
+var falsetestconfig []string
+var nokeyconfig []string
 var wtest http.ResponseWriter
 var reqtest http.Request
 var resptest http.Response
-var errTest = errors.New("fake error")
+var errTest = "fake error"
 
 var etest error
+var defaultLog = dLog{}
 
 func init() {
-	testconfig["reverseproxyplugins"] = []string{"../plugs/examplegate/examplegate.so",
+	testconfig = []string{"../plugs/examplegate/examplegate.so",
 		"../plugs/panicgate/panicgate.so",
 		"../plugs/nopluggate/nopluggate.so",
 		"../plugs/wrongpluggate/wrongpluggate.so",
 		"../plugs/badversionplug/badversionplug.so",
 	}
-	testconfig["panic"] = false
-	emptytestconfig["reverseproxyplugins"] = []string{}
-	falsetestconfig["reverseproxyplugins"] = []int{2}
+	//testconfig["panic"] = false
+	emptytestconfig = []string{}
+	falsetestconfig = []string{"path/to/nowhere"}
+	resptest.Request = &reqtest
+}
+func InitializeEnv(panic string, err string) {
+	UnloadPlugs()
+	os.Setenv("PANIC_GATE_PANIC_INIT", "false")
+	os.Setenv("PANIC_GATE_PANIC_SHUTDOWN", "false")
+	os.Setenv("PANIC_GATE_PANIC_REQ", "false")
+	os.Setenv("PANIC_GATE_PANIC_RESP", "false")
+	os.Setenv("PANIC_GATE_PANIC_ERR", "false")
+	if panic != "" {
+		os.Setenv(panic, "true")
+	}
+	os.Setenv("PANIC_GATE_ERROR", err)
+	LoadPlugs(defaultLog, testconfig)
 }
 
 func TestMain(m *testing.M) {
-	testconfig["panic"] = false
-	testconfig["error"] = nil
-	LoadPlugs(defaultLog, testconfig)
-	code := m.Run()
-	UnloadPlugs()
 	testlog = 0
+	UnloadPlugs()
+	code := m.Run()
 	os.Exit(code)
 }
 func TestLoadPlugs(t *testing.T) {
 	var numTests int
+
+	InitializeEnv("", "")
 
 	if numTests = LoadPlugs(nil, nil); numTests != 2 {
 		t.Errorf("LoadPlugs expected 2 returned %d\n", numTests)
@@ -77,7 +90,7 @@ func TestLoadPlugs(t *testing.T) {
 		t.Errorf("LoadPlugs expected 24returned %d\n", numTests)
 	}
 	if testlog > 0 {
-		t.Errorf("LoadPlugs expected 0 warnings and errors, received  %d\n", log)
+		t.Errorf("LoadPlugs expected 0 warnings and errors, received  %d\n", testlog)
 	}
 
 	UnloadPlugs()
@@ -86,14 +99,13 @@ func TestLoadPlugs(t *testing.T) {
 		t.Errorf("LoadPlugs expected 2 returned %d\n", numTests)
 	}
 	if testlog > 0 {
-		t.Errorf("LoadPlugs expected 0 warnings and errors, received  %d\n", log)
+		t.Errorf("LoadPlugs expected 0 warnings and errors, received  %d\n", testlog)
 	}
 
-	testconfig["panic"] = true
-	if numTests = LoadPlugs(defaultLog, testconfig); numTests != 3 {
-		t.Errorf("LoadPlugs expected 3 returned %d\n", numTests)
+	InitializeEnv("PANIC_GATE_PANIC_INIT", "")
+	if numTests = LoadPlugs(defaultLog, testconfig); numTests != 2 {
+		t.Errorf("LoadPlugs expected 2 returned %d\n", numTests)
 	}
-	testconfig["panic"] = false
 }
 
 //handleRequest
@@ -120,35 +132,37 @@ func TestHandleRequestPlugs(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
-		args args
-		err  error
+		name  string
+		args  args
+		err   string
+		panic bool
 	}{
 		// TODO: Add test cases.
-		{"", args{finalh}, nil},
-		{"", args{finalh}, errTest},
+		{"", args{finalh}, "", false},
+		{"", args{finalh}, errTest, false},
+		{"", args{finalh}, "", true},
+		{"", args{finalh}, errTest, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testconfig["error"] = tt.err
+			if tt.panic {
+				InitializeEnv("PANIC_GATE_PANIC_REQ", "true")
+			} else {
+				InitializeEnv("", tt.err)
+			}
 			got := HandleRequestPlugs(tt.args.h)
 			if got == nil {
 				t.Errorf("HandleRequestPlugs() returned = %v which is unwated", got)
 			}
 
-			got.ServeHTTP(wtest, &reqtest)
-			if (tt.err == nil) != success {
-				t.Errorf("HandleRequestPlugs - ServeHTTP failed")
-			}
 			success = false
-			testconfig["panic"] = true
 			got.ServeHTTP(wtest, &reqtest)
-			if success {
+			if tt.panic && success {
 				t.Errorf("HandleRequestPlugs - ServeHTTP succeded when we expected it to panic and fail")
 			}
-			success = false
-			testconfig["panic"] = false
-			testconfig["error"] = nil
+			if (tt.err != "") && success {
+				t.Errorf("HandleRequestPlugs - ServeHTTP succeded when we expected it to error and fail")
+			}
 		})
 	}
 }
@@ -160,21 +174,22 @@ func TestHandleErrorPlugs(t *testing.T) {
 		e error
 	}
 	tests := []struct {
-		name string
-		args args
+		name  string
+		args  args
+		panic bool
 	}{
 		// TODO: Add test cases.
-		{"", args{wtest, &reqtest, etest}},
+		{"", args{wtest, &reqtest, etest}, false},
+		{"", args{wtest, &reqtest, etest}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.panic {
+				InitializeEnv("PANIC_GATE_PANIC_REQ", "true")
+			} else {
+				InitializeEnv("", "")
+			}
 			HandleErrorPlugs(tt.args.w, tt.args.r, tt.args.e)
-			testconfig["panic"] = true
-			HandleErrorPlugs(tt.args.w, tt.args.r, tt.args.e)
-			testconfig["panic"] = false
-			testconfig["error"] = errTest
-			HandleErrorPlugs(tt.args.w, tt.args.r, tt.args.e)
-			testconfig["error"] = nil
 		})
 	}
 }
@@ -184,46 +199,45 @@ func TestHandleResponsePlugs(t *testing.T) {
 		resp *http.Response
 	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name  string
+		args  args
+		err   string
+		panic bool
 	}{
 		// TODO: Add test cases.
-		{"Without Error", args{&resptest}, false},
-		{"With Error", args{&resptest}, true},
+		{"Without Error", args{&resptest}, "", false},
+		{"With Error", args{&resptest}, errTest, false},
+		{"Panic Without Error", args{&resptest}, "", true},
+		{"Panic With Error", args{&resptest}, errTest, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.wantErr {
-				testconfig["error"] = errTest
+			if tt.panic {
+				InitializeEnv("PANIC_GATE_PANIC_RESP", "true")
+			} else {
+				InitializeEnv("", tt.err)
 			}
-			if err := HandleResponsePlugs(tt.args.resp); (err != nil) != tt.wantErr {
-				t.Errorf("HandleResponsePlugs() error = %v, wantErr %v", err, tt.wantErr)
+
+			err := HandleResponsePlugs(tt.args.resp)
+			if tt.panic {
+				if err.Error() != "plug paniced" {
+					t.Errorf("HandleResponsePlugs() panic but err is %v", err)
+				}
+			} else {
+				if (err == nil) == (tt.err != "") {
+					t.Errorf("HandleResponsePlugs() error = %v, expected %v", err, tt.err)
+				}
 			}
-			testconfig["panic"] = true
-			if err := HandleResponsePlugs(tt.args.resp); err != nil {
-				t.Errorf("HandleResponsePlugs() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			testconfig["panic"] = false
-			testconfig["error"] = nil
 		})
 	}
 }
 
 func TestUnloadPlugs(t *testing.T) {
-	tests := []struct {
-		name string
-	}{
-		// TODO: Add test cases.
-		{""},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			UnloadPlugs()
-			LoadPlugs(defaultLog, testconfig)
-			testconfig["panic"] = true
-			UnloadPlugs()
-			testconfig["panic"] = false
-		})
-	}
+	t.Run("", func(t *testing.T) {
+		InitializeEnv("", "")
+		UnloadPlugs()
+		InitializeEnv("PANIC_GATE_PANIC_SHUTDOWN", "")
+		UnloadPlugs()
+	})
+
 }

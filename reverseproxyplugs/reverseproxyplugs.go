@@ -1,6 +1,7 @@
 package reverseproxyplugs
 
 import (
+	"errors"
 	goLog "log"
 	"net/http"
 	"plugin"
@@ -10,11 +11,7 @@ import (
 )
 
 var reverseProxyPlugs []pluginterfaces.ReverseProxyPlug
-var reverseProxyPlugNames []string
-
 var log pluginterfaces.Logger
-var plugins []string
-var config map[string]interface{}
 
 type dLog struct{}
 
@@ -31,21 +28,16 @@ func (dLog) Errorf(format string, args ...interface{}) {
 	goLog.Printf(format, args...)
 }
 
-var defaultLog dLog
-
 func init() {
 	initialize()
 }
 
 func initialize() {
 	reverseProxyPlugs = []pluginterfaces.ReverseProxyPlug{}
-	reverseProxyPlugNames = []string{}
-	log = defaultLog
-	plugins = []string{}
-	config = make(map[string]interface{})
+	log = dLog{}
 }
 
-func LoadPlugs(l pluginterfaces.Logger, c map[string]interface{}) (ret int) {
+func LoadPlugs(l pluginterfaces.Logger, plugins []string) (ret int) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Warnf("Recovered from panic during LoadPlugs!\n\tOne or more plugs may be skipped\n\tRecover: %v", r)
@@ -55,25 +47,6 @@ func LoadPlugs(l pluginterfaces.Logger, c map[string]interface{}) (ret int) {
 
 	if l != nil {
 		log = l
-	}
-	log.Infof("LoadPlugs started\n")
-
-	if config = c; c == nil {
-		log.Infof("Plugs disabled - config is empty\n")
-		return
-	}
-	val, ok := config["reverseproxyplugins"]
-	if !ok {
-		log.Infof("Plugs disabled - config has no reverseproxyplugins key\n")
-		return
-	}
-
-	switch valType := val.(type) {
-	default:
-		log.Infof("Plugs disabled - config[\"reverseproxyplugins\"] is of ilegal type %v", valType)
-		return
-	case []string:
-		plugins = val.([]string)
 	}
 	for _, plugPkgPath := range plugins {
 		plugPkg, err := plugin.Open(plugPkgPath)
@@ -86,9 +59,9 @@ func LoadPlugs(l pluginterfaces.Logger, c map[string]interface{}) (ret int) {
 			switch valType := plugSymbol.(type) {
 			case pluginterfaces.ReverseProxyPlug:
 				p := plugSymbol.(pluginterfaces.ReverseProxyPlug)
-				p.Initialize(log, config)
+				p.Initialize(log)
 				reverseProxyPlugs = append(reverseProxyPlugs, p)
-				reverseProxyPlugNames = append(reverseProxyPlugNames, p.PlugName())
+				log.Infof("Plug %s (%s) was succesfully loaded", p.PlugName(), p.PlugVersion())
 				ret++
 			default:
 				log.Infof("Plugin %s skipped - Plug symbol is of ilegal type %T,  %v", plugPkgPath, plugSymbol, valType)
@@ -100,7 +73,6 @@ func LoadPlugs(l pluginterfaces.Logger, c map[string]interface{}) (ret int) {
 		}
 	}
 
-	log.Infof("Plugs %v\n", reverseProxyPlugNames)
 	return
 }
 
@@ -137,15 +109,17 @@ func HandleResponsePlugs(resp *http.Response) (e error) {
 	e = nil
 	defer func() {
 		if r := recover(); r != nil {
+			e = errors.New("plug paniced")
 			log.Warnf("Recovered from panic during HandleResponsePlugs!\n\tOne or more plugs may be skipped\n\tRecover: %v", r)
 		}
+
 	}()
-	for i, p := range reverseProxyPlugs {
+	for _, p := range reverseProxyPlugs {
 		start := time.Now()
-		log.Debugf("Plug ResponseHook: %v", reverseProxyPlugNames[i])
+		log.Debugf("Plug ResponseHook: %v", p.PlugName())
 		e = p.ResponseHook(resp)
 		elapsed := time.Since(start)
-		log.Debugf("Response-Plug %s took %s", reverseProxyPlugNames[i], elapsed.String())
+		log.Debugf("Response-Plug %s took %s", p.PlugName(), elapsed.String())
 		if e != nil {
 			log.Infof("Response-Plug returned an error %v", e)
 			break
@@ -175,9 +149,9 @@ func UnloadPlugs() {
 		if r := recover(); r != nil {
 			log.Warnf("Recovered from panic during ShutdownPlugs!\n\tOne or more plugs may be skipped\n\tRecover: %v", r)
 		}
+		initialize()
 	}()
 	for _, p := range reverseProxyPlugs {
 		p.Shutdown()
 	}
-	initialize()
 }
