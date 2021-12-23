@@ -21,7 +21,7 @@ Using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs),
 
 ![image](https://github.com/IBM/go-security-plugs/blob/main/rtplugins.png)
 
-*Security extensions* can then be introduced by third parties as shared libraries and developed seperatly from the go application. 
+*Security extensions* pluged using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs) can be introduced by third parties as shared libraries and developed seperatly from the main go application. 
 
 This allows loading extensions as the go application starts based on configuration as examplified in the example [**proxy**](https://github.com/IBM/go-security-plugs/tree/proxy.go)
 
