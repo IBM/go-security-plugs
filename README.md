@@ -21,9 +21,9 @@ Using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs),
 
 *Security extensions* such as [**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) can be introduced by third parties as shared libraries and developed seperatly from the main application. Such extensions can later be pluged using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs) to the application. As demonstrated by [**proxy**](https://github.com/IBM/go-security-plugs/tree/proxy.go), [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs) allows dynamically loading the extensions on-demand, based, for example, on the application configuration.
 
-
-![image](https://github.com/IBM/go-security-plugs/blob/main/rtplugins.png)
-
+<p align="center">
+    <img src="https://github.com/IBM/go-security-plugs/blob/main/rtplugins.png" width="700"  />
+</p>
 
 
 ## pluginterfaces
@@ -91,8 +91,9 @@ The reqeust headers  "X-Block-Req", "X-Block-Resp",  "X-Block-Async" control the
 
 An older [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/reverseproxyplugs) that does not use the RoundTripper interfce is also included in this repository. 
 
-![image](https://github.com/IBM/go-security-plugs/blob/main/reverseproxyplugs.png)
-
+<p align="center">
+    <img src="https://github.com/IBM/go-security-plugs/blob/main/reverseproxyplugs.png" width="700"  />
+</p>
 
 The [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/reverseproxyplugs) has no apperent advetages over the new mechanism that uses the RoundTripper and is left here fully functional for reference and as a second option. The use of this option is included in commented lines in the [**proxy**](https://github.com/IBM/go-security-plugs/tree/proxy.go) code. 
 
