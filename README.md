@@ -45,13 +45,13 @@ An application looking to extend reverseproxy (or any other http client) use the
 
 [**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) is an example third party secuity enhancement which import and use [**pluginterfaces**](https://github.com/IBM/go-security-plugs/tree/main/pluginterfaces) and can be loaded by the [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs).
 
-[**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) demonstrates how a request can be canceled before reaching the server. It will block any request that include the header key "X-Block-Req". 
+[**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) demonstrates how a request can be canceled before reaching the server. It will block any request that include the header "X-Block-Req:true". 
 
 
-[**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) demonstrates how a response can be canceled before reaching the client. It will block the response of any request that include the header key "X-Block-Resp". 
+[**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) demonstrates how a response can be canceled before reaching the client. It will block the response of any request that include the header "X-Block-Resp:true". 
 
 
-[**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) demonstrates how a request can be canceled asynchrniously using a security extension. The code allows requests to last for no more than 5 seconds by default. Alternativly timeout can be specified using the reqeust header key "X-Block-Async". For example: "X-Block-Async:3s" results in a cancel being processed 3 seconds from request. The timeout examplifies an asynchrnious decission to  cancel a request after it was delivered for processing by the server. 
+[**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) demonstrates how a request can be canceled asynchrniously using a security extension. The code allows requests to last for no more than 5 seconds by default. Alternativly timeout can be specified using the reqeust header "X-Block-Async:<duration>". For example: "X-Block-Async:3s" results in a cancel being processed 3 seconds from request. The timeout examplifies an asynchrnious decission to  cancel a request after it was delivered for processing by the server. 
 
 # How to use
 
@@ -74,8 +74,22 @@ To run the example here:
 ```
 
 3. using a browser or curl try the url: http://127.0.0.1:8081   and see the logs pile up in the proxy window.
-
    
+    Here are some examples: 
+```
+    curl 127.0.0.1:8081 -v   
+    curl 127.0.0.1:8081 -v   -H "X-Block-Req:true"
+    curl 127.0.0.1:8081 -v   -H "X-Block-Resp:true"
+    curl 127.0.0.1:8081 -v   -H "X-Sleep:4s"
+    curl 127.0.0.1:8081 -v   -H "X-Sleep:4s"   -H "X-Block-Async:2s"
+    curl 127.0.0.1:8081 -v   -H "X-Sleep:0.1s" -H "X-Sleep-Step:0.001s" -H "X-Sleep-Num-Steps:10000"
+    curl 127.0.0.1:8081 -v   -H "X-Sleep:0.1s" -H "X-Sleep-Step:0.001s" -H "X-Sleep-Num-Steps:10000"  -H "X-Block-Async:2s"
+```
+
+The reqeust headers "X-Sleep", "X-Sleep-Step", "X-Sleep-Num-Steps" control the behaviour of our  [**sample server**](https://github.com/IBM/go-security-plugs/tree/main/server). 
+    
+
+The reqeust headers  "X-Block-Req", "X-Block-Resp",  "X-Block-Async" control the behaviour of our  [**sample rtgate**](https://github.com/IBM/go-security-plugs/tree/main/rtgate). 
 
 ## reverseproxyplugs
 
