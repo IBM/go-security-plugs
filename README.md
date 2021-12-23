@@ -45,7 +45,13 @@ An application looking to extend reverseproxy (or any other http client) use the
 
 [**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) is an example third party secuity enhancement which import and use [**pluginterfaces**](https://github.com/IBM/go-security-plugs/tree/main/pluginterfaces) and can be loaded by the [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs).
 
-[**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) demonstrates how a request can be canceled asynchrniously using a security extension. The code allows requests to last for no more than 3 seconds. Once 3 seconds pass, it asynchrniously cancels the request. Note that a when the request is canceled, it may be already processed at the server, potentially it may be sending data after response headers were already sent or it may be perfoming some processing prior to sending response headers, or it may be completed and a race is occuring between its completion and the cancel event. The creteria used for cancellation and the exact timing is extension specific. 
+[**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) demonstrates how a request can be canceled before reaching the server. It will block any request that include the header key "X-Block-Req". 
+
+
+[**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) demonstrates how a response can be canceled before reaching the client. It will block the response of any request that include the header key "X-Block-Resp". 
+
+
+[**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) demonstrates how a request can be canceled asynchrniously using a security extension. The code allows requests to last for no more than 5 seconds by default. Alternativly timeout can be specified using the reqeust header key "X-Block-Async". For example: "X-Block-Async:3s" results in a cancel being processed 3 seconds from request. The demonstrated timeout is just example for an asynchrnious decission to  cancel the request. 
 
 # How to use
 
