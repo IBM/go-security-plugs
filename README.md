@@ -2,11 +2,11 @@
 Plugs4Security
 
 
-The [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs) package  uses the go client RoundTripper interfce and enable safely extending a go application that uses a standard golang http clien. It specifically enable extensing the [standard go reverseproxy](https://go.dev/src/net/http/httputil/reverseproxy.go) with one or more *secuity extensions*. 
+The [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs) package uses the http RoundTripper interfce to enable safely extending any go application that uses the http client. More specifically it is designed to enable extensing the [standard go reverseproxy](https://go.dev/src/net/http/httputil/reverseproxy.go) with one or more *secuity extensions*. 
 
 The package not only load extensions, but also recover from any panic situations and handle all errors  from extensions. It is meant to keep the go application safe from harm done by extensions to a certain degree. It does not protect the application from extensions which: use excasive memory, cpu or other system resources (file descriptors etc.). 
 
-Using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs), *secuity extensions* may:
+Using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs), *secuity extensions* of a reverseproxy may:
 
 1. ___Block the request___ before it reaches the server. Blocking the reqeust will result in the connection to the client being closed.  The client will receive a 502 response code. The request will never reach the server.
 
