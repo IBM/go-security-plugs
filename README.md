@@ -28,7 +28,13 @@ An application looking to extend reverseproxy (or any other http client) use the
 
 [**proxy**](https://github.com/IBM/go-security-plugs/tree/proxy.go) is an example of a go application that uses the go reverseproxy and enable a unified and simple interface for security extensions by importing and using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs).
 
+## rtgate
+
 [**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) is an example third party secuity enhancement which import and use [**pluginterfaces**](https://github.com/IBM/go-security-plugs/tree/main/pluginterfaces) and can be loaded by the [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs).
+
+[**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) demonstrates how a request can eb canceled asynchrniously using the security extension. The code allows requests to last for no more than 3 seconds. Once 3 seconds pass, it asynchrniously cancels the request. Note that a when the request is canceled, it may be already processed at the server, potentially it may be sending data after response headers were already sent or it may be perfoming some processing prior to sending response headers, or it may be completed and a race is occuring between its completion and the cancel event. The creteria used for cancellation and the exact timing is extension specific. 
+
+# How to use
 
 When using go plugs one must ensure that the shared library uses the same package versions as the application. To ensure all plugs use the same package versions as your main app:
 1. Clone the plugs into the plugs directory of yout app (as shown here with the [**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) plug).
