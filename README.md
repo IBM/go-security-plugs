@@ -19,9 +19,10 @@ Using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs),
     2.  The request was cancled __after__ the response code was sent to the client. In this case, closing the connection to the client will signal to the client that the server aborted the service. Closing the connection to the server will signal to the server that the client disconnected and no further service is required. 
 
 
-![image](https://github.com/IBM/go-security-plugs/blob/main/rtplugins.png)
+*Security extensions* such as [**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) can be introduced by third parties as shared libraries and developed seperatly from the main application. Such extensions can later be pluged using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs) to the application.
 
-*Security extensions* pluged using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs) can be introduced by third parties as shared libraries and developed seperatly from the main go application. 
+
+![image](https://github.com/IBM/go-security-plugs/blob/main/rtplugins.png)
 
 This allows loading extensions as the go application starts based on configuration as examplified in the example [**proxy**](https://github.com/IBM/go-security-plugs/tree/proxy.go)
 
