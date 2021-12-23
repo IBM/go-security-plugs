@@ -81,15 +81,23 @@ func (plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 	newCtx, cancelFunction := context.WithCancel(req.Context())
 	req = req.WithContext(newCtx)
 
-	go func(newCtx context.Context, cancelFunction context.CancelFunc, req *http.Request) {
+	timeoutStr := req.Header.Get("X-Block-Async")
+	timeout, err := time.ParseDuration(timeoutStr)
+	if err != nil {
+		timeoutStr = "5s"
+		timeout, _ = time.ParseDuration(timeoutStr)
+	}
+	Plug.log.Infof("%s ........... will asynchroniously block after %s", Plug.name, timeoutStr)
+
+	go func(newCtx context.Context, cancelFunction context.CancelFunc, req *http.Request, timeout time.Duration) {
 		select {
 		case <-newCtx.Done():
 			Plug.log.Infof("Done!")
-		case <-time.After(3 * time.Second):
+		case <-time.After(timeout):
 			Plug.log.Infof("Timeout!")
 			cancelFunction()
 		}
-	}(newCtx, cancelFunction, req)
+	}(newCtx, cancelFunction, req, timeout)
 
 	return req, nil
 }
