@@ -51,7 +51,7 @@ An application looking to extend reverseproxy (or any other http client) use the
 [**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) demonstrates how a response can be canceled before reaching the client. It will block the response of any request that include the header key "X-Block-Resp". 
 
 
-[**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) demonstrates how a request can be canceled asynchrniously using a security extension. The code allows requests to last for no more than 5 seconds by default. Alternativly timeout can be specified using the reqeust header key "X-Block-Async". For example: "X-Block-Async:3s" results in a cancel being processed 3 seconds from request. The demonstrated timeout is just example for an asynchrnious decission to  cancel the request. 
+[**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) demonstrates how a request can be canceled asynchrniously using a security extension. The code allows requests to last for no more than 5 seconds by default. Alternativly timeout can be specified using the reqeust header key "X-Block-Async". For example: "X-Block-Async:3s" results in a cancel being processed 3 seconds from request. The timeout examplifies an asynchrnious decission to  cancel a request after it was delivered for processing by the server. 
 
 # How to use
 
