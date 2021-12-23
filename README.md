@@ -89,7 +89,7 @@ To run the example here:
 The reqeust headers "X-Sleep", "X-Sleep-Step", "X-Sleep-Num-Steps" control the behaviour of our  [**sample server**](https://github.com/IBM/go-security-plugs/tree/main/server). 
     
 
-The reqeust headers  "X-Block-Req", "X-Block-Resp",  "X-Block-Async" control the behaviour of our  [**sample rtgate**](https://github.com/IBM/go-security-plugs/tree/main/rtgate). 
+The reqeust headers  "X-Block-Req", "X-Block-Resp",  "X-Block-Async" control the behaviour of our  [**sample rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate). 
 
 ## reverseproxyplugs
 
