@@ -6,7 +6,7 @@ The [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs) pa
 
 The package not only load extensions, but also recover from any panic situations and handle all errors  from extensions. It is meant to keep the go application safe from harm done by extensions to a certain degree. It does not protect the application from extensions which: use excasive memory, cpu or other system resources (file descriptors etc.). 
 
-![image](https://github.com/IBM/go-security-plugs/blob/main/rtplugs.png)
+![image](https://github.com/IBM/go-security-plugs/blob/main/rtplugins.png)
 
 *Security extensions* can then be introduced by third parties as shared libraries and developed seperatly from the go application. 
 
