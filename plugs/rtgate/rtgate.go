@@ -35,6 +35,8 @@ func (plug) Initialize(l pluginterfaces.Logger) {
 	Plug.config["errorReq"] = os.Getenv("RT_GATE_ERROR_REQ")
 	Plug.config["errorResp"] = os.Getenv("RT_GATE_ERROR_RESP")
 
+	Plug.log.Infof("Plug.config %v", Plug.config)
+
 	if Plug.config["panicInitialize"] == "true" {
 		panic("it is fun to panic everywhere! also in Initialize")
 	}

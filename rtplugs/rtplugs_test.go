@@ -2,6 +2,7 @@ package rtplugs
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -28,13 +29,16 @@ var emptytestconfig []string
 var falsetestconfig []string
 var nokeyconfig []string
 var panicconfig []string
-var wtest http.ResponseWriter
+
+//var wtest http.ResponseWriter
 var reqtest *http.Request
+var reqtestBlock *http.Request
 
 var resptest *http.Response
-var errTest = "fake error"
 
-var etest error
+//var errTest = "fake error"
+
+//var etest error
 var defaultLog = dLog{}
 var rt *RoundTrip
 
@@ -50,6 +54,8 @@ func init() {
 	panicconfig = []string{"../plugs/panicgate/panicgate.so"}
 
 	reqtest, _ = http.NewRequest("GET", "http://10.0.0.1/", nil)
+	reqtestBlock, _ = http.NewRequest("GET", "http://10.0.0.1/", nil)
+	reqtestBlock.Header.Set("X-Block-Async", "0.01s")
 	//u, _ := url.Parse("http://1.2.3.4:5678")
 	//reqtest.URL = u
 	//reqtest.Header.Set("name", "value")
@@ -73,9 +79,17 @@ func InitializeEnv(panic string, errReq string, errResp string) {
 	os.Setenv("RT_GATE_ERROR_RESP", errResp)
 }
 
-type FakeRoundTrip struct{}
+type FakeRoundTrip struct {
+}
+
+var fakeRoundTripError = false
 
 func (rt *FakeRoundTrip) RoundTrip(req *http.Request) (resp *http.Response, err error) {
+	fmt.Println("Fake Round Trip!!! started")
+	if fakeRoundTripError {
+		fmt.Println("Fake Round Trip With Error!!!")
+		return resptest, errors.New("fake error")
+	}
 	fmt.Println("Fake Round Trip!!!")
 	return resptest, nil
 }
@@ -100,16 +114,33 @@ func TestUnloadPlugs(t *testing.T) {
 }
 
 func TestTransport(t *testing.T) {
-	var fake, roundtripper http.RoundTripper
+	var fakeRoundTrip, roundtripper http.RoundTripper
 	var rt *RoundTrip
-	fake = new(FakeRoundTrip)
-
+	fakeRoundTrip = new(FakeRoundTrip)
+	_ = fakeRoundTrip
 	t.Run("", func(t *testing.T) {
 		var err error
 		var resp *http.Response
+
+		// Async Timeout with default transport
+		InitializeEnv("", "", "")
 		rt = LoadPlugs(nil, testconfig)
 		roundtripper = Transport(rt, nil)
-		roundtripper = Transport(rt, fake)
+		resp, err = roundtripper.RoundTrip(reqtestBlock)
+		fmt.Printf("TestTransport 4\n")
+		if err == nil {
+			t.Errorf("Transport returned without err %v\n", err)
+		}
+		if resp != nil {
+			t.Errorf("Transport returned resp not nil\n")
+		}
+		UnloadPlugs(rt)
+
+		// Fake transport
+		fakeRoundTripError = false
+		InitializeEnv("", "", "")
+		rt = LoadPlugs(nil, testconfig)
+		roundtripper = Transport(rt, fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err != nil {
 			t.Errorf("Transport returned with err %v\n", err)
@@ -118,9 +149,27 @@ func TestTransport(t *testing.T) {
 			t.Errorf("Transport returned resp nil\n")
 		}
 		UnloadPlugs(rt)
+
+		// Fake transport with error
+		fakeRoundTripError = true
+		InitializeEnv("", "", "")
+		rt = LoadPlugs(nil, testconfig)
+		roundtripper = Transport(rt, fakeRoundTrip)
+		resp, err = roundtripper.RoundTrip(reqtest)
+		if err == nil {
+			t.Errorf("Transport should return err %v\n", err)
+		}
+		if resp != nil {
+			t.Errorf("Transport should not return resp\n")
+		}
+		UnloadPlugs(rt)
+		fakeRoundTripError = false
+
+		// Fake transport with RTGate Panic at REQ
 		InitializeEnv("RT_GATE_PANIC_REQ", "", "")
 		rt = LoadPlugs(nil, testconfig)
-		roundtripper = Transport(rt, fake)
+
+		roundtripper = Transport(rt, fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err == nil {
 			t.Errorf("Transport should return err %v\n", err)
@@ -129,9 +178,11 @@ func TestTransport(t *testing.T) {
 			t.Errorf("Transport should not return resp\n")
 		}
 		UnloadPlugs(rt)
+
+		// Fake transport with RTGate Panic at Resp
 		InitializeEnv("RT_GATE_PANIC_RESP", "", "")
 		rt = LoadPlugs(nil, testconfig)
-		roundtripper = Transport(rt, fake)
+		roundtripper = Transport(rt, fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err == nil {
 			t.Errorf("Transport should return err %v\n", err)
@@ -140,9 +191,11 @@ func TestTransport(t *testing.T) {
 			t.Errorf("Transport should not return resp\n")
 		}
 		UnloadPlugs(rt)
+
+		// Fake transport with RTGate Error at Req
 		InitializeEnv("", "fake error", "")
 		rt = LoadPlugs(nil, testconfig)
-		roundtripper = Transport(rt, fake)
+		roundtripper = Transport(rt, fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err == nil {
 			t.Errorf("Transport should return err %v\n", err)
@@ -151,9 +204,11 @@ func TestTransport(t *testing.T) {
 			t.Errorf("Transport should not return resp\n")
 		}
 		UnloadPlugs(rt)
+
+		// Fake transport with RTGate Error at Resp
 		InitializeEnv("", "", "fake error")
 		rt = LoadPlugs(nil, testconfig)
-		roundtripper = Transport(rt, fake)
+		roundtripper = Transport(rt, fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err == nil {
 			t.Errorf("Transport should return err %v\n", err)

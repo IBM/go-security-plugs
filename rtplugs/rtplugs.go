@@ -37,34 +37,44 @@ func (rt *RoundTrip) approveRequests(reqin *http.Request) (req *http.Request, er
 		start := time.Now()
 		req, err = p.ApproveRequest(req)
 		elapsed := time.Since(start)
-		rt.log.Debugf("Plug %s: ApproveRequest took %s", p.PlugName(), elapsed.String())
 		if err != nil {
 			rt.log.Infof("Plug %s: ApproveRequest returned an error %v", p.PlugName(), err)
+			req = nil
 			return
 		}
-	}
-	return
-}
-
-func (rt *RoundTrip) approveResponse(req *http.Request, resp *http.Response) (err error) {
-	for _, p := range rt.roudTripPlugs {
-		start := time.Now()
-		err = p.ApproveResponse(req, resp)
-		elapsed := time.Since(start)
-		rt.log.Debugf("Plug %s: ApproveResponse took %s", p.PlugName(), elapsed.String())
-		if err != nil {
-			rt.log.Infof("Plug %s: ApproveResponse returned an error %v", p.PlugName(), err)
-			return
-		}
+		rt.log.Debugf("Plug %s: ApproveRequest took %s", p.PlugName(), elapsed.String())
 	}
 	return
 }
 
 func (rt *RoundTrip) nextRoundTrip(req *http.Request) (resp *http.Response, err error) {
 	start := time.Now()
+	rt.log.Debugf("nextRoundTrip rt.next.RoundTrip started\n")
 	resp, err = rt.next.RoundTrip(req)
+	rt.log.Debugf("nextRoundTrip rt.next.RoundTrip ended\n")
 	elapsed := time.Since(start)
-	rt.log.Debugf("Default DefaultTransport took %s\n", elapsed.String())
+	if err != nil {
+		rt.log.Infof("nextRoundTrip (i.e. DefaultTransport) returned an error %v", err)
+		resp = nil
+		return
+	}
+	rt.log.Debugf("nextRoundTrip (i.e. DefaultTransport) took %s\n", elapsed.String())
+	return
+}
+
+func (rt *RoundTrip) approveResponse(req *http.Request, respIn *http.Response) (resp *http.Response, err error) {
+	resp = respIn
+	for _, p := range rt.roudTripPlugs {
+		start := time.Now()
+		err = p.ApproveResponse(req, resp)
+		elapsed := time.Since(start)
+		if err != nil {
+			rt.log.Infof("Plug %s: ApproveResponse returned an error %v", p.PlugName(), err)
+			resp = nil
+			return
+		}
+		rt.log.Debugf("Plug %s: ApproveResponse took %s", p.PlugName(), elapsed.String())
+	}
 	return
 }
 
@@ -77,17 +87,13 @@ func (rt *RoundTrip) RoundTrip(req *http.Request) (resp *http.Response, err erro
 		}
 	}()
 
-	req, err = rt.approveRequests(req)
-	if err == nil {
-		resp, err = rt.nextRoundTrip(req)
-	}
-
-	if err == nil {
-		err = rt.approveResponse(req, resp)
-	}
-	if err != nil {
-		rt.log.Infof("RoundTrip returned an error %v", err)
-		resp = nil
+	if req, err = rt.approveRequests(req); err == nil {
+		rt.log.Debugf("ApproveRequest ended")
+		if resp, err = rt.nextRoundTrip(req); err == nil {
+			rt.log.Debugf("nextRoundTrip ended")
+			resp, err = rt.approveResponse(req, resp)
+			rt.log.Debugf("approveResponse ended")
+		}
 	}
 	return
 }
@@ -137,6 +143,7 @@ func LoadPlugs(l pluginterfaces.Logger, plugins []string) (rt *RoundTrip) {
 			continue
 		}
 	}
+	rt.log.Infof("Total plugs: %d - %v ", len(rt.roudTripPlugs), rt.roudTripPlugs)
 	if len(rt.roudTripPlugs) == 0 {
 		rt = nil
 	}
