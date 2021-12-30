@@ -1,5 +1,5 @@
 package main
 
-type plug struct{}
-
-var Plug plug = plug{}
+func NewPlug(a int) int {
+	return a + 1
+}

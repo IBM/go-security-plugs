@@ -66,7 +66,7 @@ func (rt *RoundTrip) approveResponse(req *http.Request, respIn *http.Response) (
 	resp = respIn
 	for _, p := range rt.roudTripPlugs {
 		start := time.Now()
-		err = p.ApproveResponse(req, resp)
+		resp, err = p.ApproveResponse(req, resp)
 		elapsed := time.Since(start)
 		if err != nil {
 			rt.log.Infof("Plug %s: ApproveResponse returned an error %v", p.PlugName(), err)
@@ -118,32 +118,33 @@ func LoadPlugs(l pluginterfaces.Logger, plugins []string) (rt *RoundTrip) {
 	}()
 
 	for _, plugPkgPath := range plugins {
-		rt.log.Infof("Trying Plugin %s", plugPkgPath)
-
 		plugPkg, err := plugin.Open(plugPkgPath)
 		if err != nil {
-			rt.log.Infof("Plugin %s skipped - Failed to open plugin. Err: %v", plugPkgPath, err)
+			rt.log.Warnf("Plugin %s skipped - failed to load so file. Err: %v", plugPkgPath, err)
 			continue
 		}
 
-		if plugSymbol, err := plugPkg.Lookup("Plug"); err == nil {
-			switch valType := plugSymbol.(type) {
-			case pluginterfaces.RoundTripPlug:
-				p := plugSymbol.(pluginterfaces.RoundTripPlug)
-				p.Initialize(rt.log)
-				rt.roudTripPlugs = append(rt.roudTripPlugs, p)
-				rt.log.Infof("Plug %s (%s) was succesfully loaded", p.PlugName(), p.PlugVersion())
-
-			default:
-				rt.log.Infof("Plugin %s skipped - Plug symbol is of ilegal type %T,  %v", plugPkgPath, plugSymbol, valType)
-			}
-
-		} else {
-			rt.log.Infof("Cant find Plug symbol in plugin: %s: %v", plugPkgPath, err)
+		newPlugSymbol, newPlugSymbolErr := plugPkg.Lookup("NewPlug")
+		if newPlugSymbolErr != nil {
+			rt.log.Warnf("Plugin %s skipped - missing 'NewPlug' symbol in plugin: %v", plugPkgPath, newPlugSymbolErr)
 			continue
 		}
+
+		newPlug, newPlugTypeOk := newPlugSymbol.(func(pluginterfaces.Logger) pluginterfaces.RoundTripPlug)
+		if !newPlugTypeOk {
+			rt.log.Warnf("Plugin %s skipped - 'NewPlug' symbol is of ilegal type %T", plugPkgPath, newPlugSymbol)
+			continue
+		}
+		// Okie Dokie - this plugin seems ok
+		// Lets instantiate this new Plug
+		p := newPlug(rt.log)
+
+		rt.roudTripPlugs = append(rt.roudTripPlugs, p)
+
+		rt.log.Infof("Plug %s (%s) was succesfully loaded", p.PlugName(), p.PlugVersion())
 	}
-	rt.log.Infof("Total plugs: %d - %v ", len(rt.roudTripPlugs), rt.roudTripPlugs)
+
+	rt.log.Infof("Loaded plugs: %d - %v ", len(rt.roudTripPlugs), rt.roudTripPlugs)
 	if len(rt.roudTripPlugs) == 0 {
 		rt = nil
 	}

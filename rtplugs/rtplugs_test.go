@@ -25,6 +25,7 @@ func (c countLog) Errorf(format string, args ...interface{}) {
 
 var testlog countLog
 var testconfig []string
+var testconfigAll []string
 var emptytestconfig []string
 var falsetestconfig []string
 var nokeyconfig []string
@@ -43,7 +44,8 @@ var defaultLog = dLog{}
 var rt *RoundTrip
 
 func init() {
-	testconfig = []string{"../plugs/rtgate/rtgate.so",
+	testconfig = []string{"../plugs/rtgate/rtgate.so"}
+	testconfigAll = []string{"../plugs/rtgate/rtgate.so",
 		"../plugs/nopluggate/nopluggate.so",
 		"../plugs/wrongpluggate/wrongpluggate.so",
 		"../plugs/badversionplug/badversionplug.so",
@@ -231,6 +233,7 @@ func TestLoadPlugs(t *testing.T) {
 	if rt = LoadPlugs(defaultLog, emptytestconfig); rt != nil {
 		t.Errorf("LoadPlugs expected nil\n")
 	}
+
 	t.Logf("falsetestconfig is %v", falsetestconfig)
 	if rt = LoadPlugs(defaultLog, falsetestconfig); rt != nil {
 		t.Errorf("LoadPlugs expected nil\n")
@@ -241,8 +244,8 @@ func TestLoadPlugs(t *testing.T) {
 	}
 
 	testlog = 0
-	t.Logf("testconfig is %v", testconfig)
-	if rt = LoadPlugs(nil, testconfig); rt == nil {
+	t.Logf("testconfig is %v", testconfigAll)
+	if rt = LoadPlugs(nil, testconfigAll); rt == nil {
 		t.Errorf("LoadPlugs did not expect nil\n")
 	}
 

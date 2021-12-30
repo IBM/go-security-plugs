@@ -10,13 +10,13 @@ type Logger interface {
 }
 
 type AnyPlug interface {
-	Initialize(Logger)
 	Shutdown()
 	PlugName() string
 	PlugVersion() string
 }
 
 type ReverseProxyPlug interface {
+	Initialize(Logger)
 	AnyPlug
 	RequestHook(http.ResponseWriter, *http.Request) error
 	ResponseHook(*http.Response) error
@@ -26,5 +26,5 @@ type ReverseProxyPlug interface {
 type RoundTripPlug interface {
 	AnyPlug
 	ApproveRequest(*http.Request) (*http.Request, error)
-	ApproveResponse(*http.Request, *http.Response) error
+	ApproveResponse(*http.Request, *http.Response) (*http.Response, error)
 }

@@ -18,10 +18,8 @@ func (d dLog) Warnf(format string, args ...interface{})  {}
 func (d dLog) Errorf(format string, args ...interface{}) {}
 
 var defaultLog dLog
-var p plug
 
 func TestMain(m *testing.M) {
-	p.Initialize(defaultLog)
 	code := m.Run()
 	os.Exit(code)
 }
@@ -39,7 +37,7 @@ func Test_plug_Initialize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p.Initialize(tt.args.l)
+			NewPlug(tt.args.l)
 		})
 	}
 }
@@ -53,6 +51,7 @@ func Test_plug_Shutdown(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			p := NewPlug(defaultLog)
 			p.Shutdown()
 		})
 	}
@@ -68,6 +67,7 @@ func Test_plug_PlugName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			p := NewPlug(defaultLog)
 			if got := p.PlugName(); got != tt.want {
 				t.Errorf("plug.PlugName() = %v, want %v", got, tt.want)
 			}
@@ -85,6 +85,7 @@ func Test_plug_PlugVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			p := NewPlug(defaultLog)
 			if got := p.PlugVersion(); got != tt.want {
 				t.Errorf("plug.PlugVersion() = %v, want %v", got, tt.want)
 			}
@@ -94,8 +95,7 @@ func Test_plug_PlugVersion(t *testing.T) {
 
 func Test_plug_ApproveResponse(t *testing.T) {
 	t.Run("", func(t *testing.T) {
-		var p plug
-		p.Initialize(defaultLog)
+		p := NewPlug(defaultLog)
 
 		req := httptest.NewRequest("GET", "/some/path", nil)
 		respRecorder := httptest.NewRecorder()
@@ -104,13 +104,13 @@ func Test_plug_ApproveResponse(t *testing.T) {
 		resp.Request = req
 		resp.Header.Set("name", "val")
 
-		err1 := p.ApproveResponse(req, resp)
+		_, err1 := p.ApproveResponse(req, resp)
 		if err1 != nil {
 			t.Errorf("ApproveResponse returned error = %v", err1)
 		}
 
 		req.Header.Set("X-Block-Resp", "value")
-		err2 := p.ApproveResponse(req, resp)
+		_, err2 := p.ApproveResponse(req, resp)
 		if err2 == nil {
 			t.Errorf("ApproveResponse did not return error! ")
 		}
@@ -120,8 +120,7 @@ func Test_plug_ApproveResponse(t *testing.T) {
 
 func Test_plug_ApproveRequest(t *testing.T) {
 	t.Run("", func(t *testing.T) {
-		var p plug
-		p.Initialize(defaultLog)
+		p := NewPlug(defaultLog)
 		req := httptest.NewRequest("GET", "/some/path", nil)
 		req.Header.Set("name", "value")
 
