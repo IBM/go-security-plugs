@@ -37,6 +37,7 @@ func main() {
 
 	//Example env
 	os.Setenv("ROUND_TRIP_PLUGINS", "plugs/rtgate/rtgate.so")
+	//os.Setenv("ROUND_TRIP_PLUGINS", "plugs/wsgate/wsgate.so")
 	os.Setenv("REVERSE_PROXY_PLUGINS", "plugs/examplegate/examplegate.so")
 
 	if err := envconfig.Process("", &env); err != nil {
@@ -45,16 +46,13 @@ func main() {
 	}
 
 	log.Infof("Proxy started with %v", env)
-	// Load the list of shared libraries as defined by env.extensions
-	// Set the shared library to use the application log facilities
-	// Log facilities interface include: Debugf, Infof, Warnf, Errorf
 
 	// Hook using RoudTripper
 	if len(env.RoundTripPlugins) > 0 {
-		rt := rtplugs.LoadPlugs(log, env.RoundTripPlugins)
+		rt := rtplugs.New(log, env.RoundTripPlugins)
 		if rt != nil {
-			defer rtplugs.UnloadPlugs(rt)
-			proxy.Transport = rtplugs.Transport(rt, proxy.Transport)
+			defer rt.Close()
+			proxy.Transport = rt.Transport(proxy.Transport)
 		}
 	}
 
