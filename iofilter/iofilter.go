@@ -1,3 +1,6 @@
+// iofilter can help filter data arriving from an io.ReadCloser
+// It allows wraping an existing io.ReadCloser provider and filter
+// the data before exposing it it up the chain.
 package iofilter
 
 import (
@@ -6,41 +9,63 @@ import (
 	"time"
 )
 
-type iofilter struct {
+// An Iofilter object maintining internal buffers and state
+type Iofilter struct {
 	inBuf      []byte
 	outBuf     []byte
 	bufChan    chan []byte
 	bufs       [][]byte
-	inBubIndex int
-	numBufs    int
+	inBubIndex uint
+	numBufs    uint
+	sizeBuf    uint
 	src        io.ReadCloser
 	filter     func(buf []byte) error
 }
 
-func New(src io.ReadCloser, filter func(buf []byte) error, params ...int) (iof *iofilter) {
-	var numBufs int
+// Create a New iofilter to wrap an existing provider of an io.ReadCloser interface
+// The new iofilter will expose an io.ReadCloser interface
+// The data will be sent to filter before it is delivered
+// The optional params may include a two integer parameter indicating:
+// 1. The number of buffers which may be at least 3 (default is 3)
+// 2. The size of the buffers (default is 8192)
+// A goroutine will be initiatd to wait on the original provider Read interface
+// and deliver the data to the Readwer using an internal channel
+func New(src io.ReadCloser, filter func(buf []byte) error, params ...uint) (iof *Iofilter) {
+	var numBufs, sizeBuf uint
 	fmt.Printf("params: %v\n", params)
 	switch len(params) {
 	case 0:
 		numBufs = 3
+		sizeBuf = 8192
 	case 1:
 		numBufs = params[0]
 		if numBufs < 3 {
 			numBufs = 3
 		}
+		sizeBuf = 8192
+	case 2:
+		numBufs = params[0]
+		if numBufs < 3 {
+			numBufs = 3
+		}
+		sizeBuf = params[1]
+		if sizeBuf < 1 {
+			sizeBuf = 1
+		}
 	default:
 		panic("too many params in newStream")
 	}
 
-	iof = new(iofilter)
+	iof = new(Iofilter)
 	iof.numBufs = numBufs
+	iof.sizeBuf = sizeBuf
 	iof.filter = filter
 	iof.src = src
 
 	// create s.numBufs buffers
 	iof.bufs = make([][]byte, iof.numBufs)
-	for i := 0; i < iof.numBufs; i++ {
-		iof.bufs[i] = make([]byte, 8192)
+	for i := uint(0); i < iof.numBufs; i++ {
+		iof.bufs[i] = make([]byte, iof.sizeBuf)
 	}
 
 	// we will maintain a maximum of s.numBufs-2 in s.bufChan + one buffer in s.inBuf + one buffer s.outBuf
@@ -101,7 +126,8 @@ func New(src io.ReadCloser, filter func(buf []byte) error, params ...int) (iof *
 	return
 }
 
-func (iof *iofilter) Read(dest []byte) (n int, err error) {
+// The io.Read interface of the iofilter
+func (iof *Iofilter) Read(dest []byte) (n int, err error) {
 	//fmt.Printf("(iof *iofilter) Read\n")
 	var opened bool
 	err = nil
@@ -122,13 +148,14 @@ func (iof *iofilter) Read(dest []byte) (n int, err error) {
 	return
 }
 
-func (iof *iofilter) Close() error {
+// The io.Close interface of the iofilter
+func (iof *Iofilter) Close() error {
 	fmt.Printf("(iof *iofilter) Close\n")
 	iof.closeSrc()
 	return nil
 }
 
-func (iof *iofilter) closeSrc() error {
+func (iof *Iofilter) closeSrc() error {
 	// There seem to be no standart convension about closing
 	// Some may require it..
 	// Others may alwaysb allow it..
