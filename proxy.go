@@ -49,8 +49,9 @@ func main() {
 
 	// Hook using RoudTripper
 	if len(env.RoundTripPlugins) > 0 {
-		rt := rtplugs.New(log, env.RoundTripPlugins)
+		rt := rtplugs.New(env.RoundTripPlugins)
 		if rt != nil {
+			rt.SetLogger(log)
 			defer rt.Close()
 			proxy.Transport = rt.Transport(proxy.Transport)
 		}

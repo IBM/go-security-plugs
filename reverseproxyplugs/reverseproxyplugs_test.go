@@ -18,6 +18,9 @@ func (c countLog) Warnf(format string, args ...interface{}) {
 func (c countLog) Errorf(format string, args ...interface{}) {
 	c++
 }
+func (c countLog) Sync() error {
+	return nil
+}
 
 var testlog countLog
 var testconfig []string

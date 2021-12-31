@@ -27,6 +27,9 @@ func (dLog) Warnf(format string, args ...interface{}) {
 func (dLog) Errorf(format string, args ...interface{}) {
 	goLog.Printf(format, args...)
 }
+func (dLog) Sync() error {
+	return nil
+}
 
 func init() {
 	initialize()

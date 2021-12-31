@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	goLog "log"
 	"net/http"
 	"os"
 	"testing"
@@ -21,6 +22,10 @@ func (c countLog) Warnf(format string, args ...interface{}) {
 }
 func (c countLog) Errorf(format string, args ...interface{}) {
 	c++
+}
+
+func (c countLog) Sync() error {
+	return nil
 }
 
 var testlog countLog
@@ -40,6 +45,21 @@ var resptest *http.Response
 //var errTest = "fake error"
 
 //var etest error
+type dLog struct{}
+
+func (dLog) Debugf(format string, args ...interface{}) {
+	goLog.Printf(format, args...)
+}
+func (dLog) Infof(format string, args ...interface{}) {
+	goLog.Printf(format, args...)
+}
+func (dLog) Warnf(format string, args ...interface{}) {
+	goLog.Printf(format, args...)
+}
+func (dLog) Errorf(format string, args ...interface{}) {
+	goLog.Printf(format, args...)
+}
+
 var defaultLog = dLog{}
 var rt *RoundTrip
 
@@ -106,10 +126,10 @@ func TestMain(m *testing.M) {
 func TestUnloadPlugs(t *testing.T) {
 	t.Run("", func(t *testing.T) {
 		InitializeEnv("", "", "")
-		rt = New(nil, testconfig)
+		rt = New(testconfig)
 		rt.Close()
 		InitializeEnv("RT_GATE_PANIC_SHUTDOWN", "", "")
-		rt = New(nil, testconfig)
+		rt = New(testconfig)
 		rt.Close()
 	})
 }
@@ -125,7 +145,7 @@ func TestTransport(t *testing.T) {
 
 		// Async Timeout with default transport
 		InitializeEnv("", "", "")
-		rt = New(nil, testconfig)
+		rt = New(testconfig)
 		roundtripper = rt.Transport(nil)
 		resp, err = roundtripper.RoundTrip(reqtestBlock)
 		fmt.Printf("TestTransport 4\n")
@@ -140,7 +160,7 @@ func TestTransport(t *testing.T) {
 		// Fake transport
 		fakeRoundTripError = false
 		InitializeEnv("", "", "")
-		rt = New(nil, testconfig)
+		rt = New(testconfig)
 		roundtripper = rt.Transport(fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err != nil {
@@ -154,7 +174,7 @@ func TestTransport(t *testing.T) {
 		// Fake transport with error
 		fakeRoundTripError = true
 		InitializeEnv("", "", "")
-		rt = New(nil, testconfig)
+		rt = New(testconfig)
 		roundtripper = rt.Transport(fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err == nil {
@@ -168,7 +188,7 @@ func TestTransport(t *testing.T) {
 
 		// Fake transport with RTGate Panic at REQ
 		InitializeEnv("RT_GATE_PANIC_REQ", "", "")
-		rt = New(nil, testconfig)
+		rt = New(testconfig)
 
 		roundtripper = rt.Transport(fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
@@ -182,7 +202,7 @@ func TestTransport(t *testing.T) {
 
 		// Fake transport with RTGate Panic at Resp
 		InitializeEnv("RT_GATE_PANIC_RESP", "", "")
-		rt = New(nil, testconfig)
+		rt = New(testconfig)
 		roundtripper = rt.Transport(fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err == nil {
@@ -195,7 +215,7 @@ func TestTransport(t *testing.T) {
 
 		// Fake transport with RTGate Error at Req
 		InitializeEnv("", "fake error", "")
-		rt = New(nil, testconfig)
+		rt = New(testconfig)
 		roundtripper = rt.Transport(fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err == nil {
@@ -208,7 +228,7 @@ func TestTransport(t *testing.T) {
 
 		// Fake transport with RTGate Error at Resp
 		InitializeEnv("", "", "fake error")
-		rt = New(nil, testconfig)
+		rt = New(testconfig)
 		roundtripper = rt.Transport(fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err == nil {
@@ -224,47 +244,36 @@ func TestTransport(t *testing.T) {
 func TestLoadPlugs(t *testing.T) {
 	var rt *RoundTrip
 
-	if rt = New(nil, nil); rt != nil {
+	if rt = New(nil); rt != nil {
 		t.Errorf("LoadPlugs expected nil\n")
 	}
 
 	t.Logf("emptytestconfig is %v", emptytestconfig)
-	if rt = New(defaultLog, emptytestconfig); rt != nil {
+	if rt = New(emptytestconfig); rt != nil {
 		t.Errorf("LoadPlugs expected nil\n")
 	}
 
 	t.Logf("falsetestconfig is %v", falsetestconfig)
-	if rt = New(defaultLog, falsetestconfig); rt != nil {
+	if rt = New(falsetestconfig); rt != nil {
 		t.Errorf("LoadPlugs expected nil\n")
 	}
 
-	if rt = New(defaultLog, nokeyconfig); rt != nil {
+	if rt = New(nokeyconfig); rt != nil {
 		t.Errorf("LoadPlugs expected nil\n")
 	}
 
-	testlog = 0
 	t.Logf("testconfig is %v", testconfigAll)
-	if rt = New(nil, testconfigAll); rt == nil {
+	if rt = New(testconfigAll); rt == nil {
 		t.Errorf("LoadPlugs did not expect nil\n")
 	}
-
-	if testlog > 0 {
-		t.Errorf("LoadPlugs expected 0 warnings and errors, received  %d\n", testlog)
-	}
-
 	rt.Close()
 
-	testlog = 0
-	if rt = New(testlog, testconfig); rt == nil {
-		t.Errorf("LoadPlugs did not expect nil\n")
-	}
-	if testlog > 0 {
-		t.Errorf("LoadPlugs expected 0 warnings and errors, received  %d\n", testlog)
-	}
-
+	rt = New(testconfig)
+	rt.SetLogger(testlog)
 	rt.Close()
+
 	InitializeEnv("RT_GATE_PANIC_INIT", "", "")
-	if rt = New(defaultLog, testconfig); rt != nil {
+	if rt = New(testconfig); rt != nil {
 		t.Errorf("LoadPlugs expected nil\n")
 	}
 }

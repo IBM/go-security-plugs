@@ -17,6 +17,7 @@ func (d dLog) Debugf(format string, args ...interface{}) {}
 func (d dLog) Infof(format string, args ...interface{})  {}
 func (d dLog) Warnf(format string, args ...interface{})  {}
 func (d dLog) Errorf(format string, args ...interface{}) {}
+func (d dLog) Sync() error                               { return nil }
 
 var defaultLog dLog
 var p plug
