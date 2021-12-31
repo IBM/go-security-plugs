@@ -14,9 +14,9 @@ if rt != nil {
 While `pluginList` is a slice of strings for the path of plugins (.so files) to load
 
 You may set the logger that will be used by rtplugs and all plugins by setting 
-`rtplugs.Logger` before calling `New()`
+`pluginterfaces.Log` to any logger thet meets the `pluginterfaces.Logger` interface.
 
-Use rt.Close() to gracefully shutdown the work of plugins
+Use `rt.Close()` to gracefully shutdown the work of plugins
 
 For example:
 ```
@@ -33,7 +33,7 @@ func main() {
 	var h http.Handler = proxy
 
 	// Have the plugins use the same logger we do    
-    rtplugs.Logger = log  // (optional)
+    pluginterfaces.Logger = log  // (optional)
 
     // Hook using RoundTripper
     rt := rtplugs.New(pluginList)
