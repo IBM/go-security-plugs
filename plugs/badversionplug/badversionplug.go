@@ -12,8 +12,7 @@ const version string = "0.0.7"
 
 type plug struct {
 	version string
-	//log     pluginterfaces.Logger
-	config map[string]interface{}
+	config  map[string]interface{}
 }
 
 func init() {

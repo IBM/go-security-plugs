@@ -35,7 +35,7 @@ func main() {
 	// Have the plugins use the same logger we do    
     rtplugs.Logger = log  // (optional)
 
-    // Hook using RoudTripper
+    // Hook using RoundTripper
     rt := rtplugs.New(pluginList)
     if rt != nil {
         defer rt.Close()

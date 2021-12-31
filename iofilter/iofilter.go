@@ -92,13 +92,13 @@ func New(src io.ReadCloser, filter func(buf []byte) error, params ...uint) (iof 
 		var n int
 		var err error
 		for {
-			fmt.Printf("(iof *iofilter) Gorutine Reading...\n")
+			//fmt.Printf("(iof *iofilter) Gorutine Reading...\n")
 			n, err = iof.src.Read(iof.inBuf)
 			if n > 0 {
-				fmt.Printf("(iof *iofilter) Gorutine read %d bytes\n", n)
+				//fmt.Printf("(iof *iofilter) Gorutine read %d bytes\n", n)
 				err = iof.filter(iof.inBuf[:n])
 				if err != nil {
-					fmt.Printf("(iof *iofilter) Gorutine filter blocked: %v\n", err)
+					//fmt.Printf("(iof *iofilter) Gorutine filter blocked: %v\n", err)
 					return
 				}
 				iof.bufChan <- iof.inBuf[:n]

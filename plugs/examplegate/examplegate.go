@@ -13,14 +13,12 @@ const name string = "ExampleGate"
 type plug struct {
 	name    string
 	version string
-	//log     pluginterfaces.Logger
 	// Add here any other state the extension needs
 }
 
 var Plug plug = plug{version: version, name: name}
 
 func (plug) Initialize() {
-	//pi.Log = l
 	pi.Log.Infof("%s: Initializing - version %v\n", Plug.name, Plug.version)
 }
 

@@ -9,13 +9,11 @@ import (
 
 type plug struct {
 	config map[string]string
-	//log    pluginterfaces.Logger
 }
 
 var Plug plug = plug{}
 
 func (plug) Initialize() {
-	//Plug.log = l
 	Plug.config = make(map[string]string)
 	Plug.config["panicInitialize"] = os.Getenv("PANIC_GATE_PANIC_INIT")
 	Plug.config["panicShutdown"] = os.Getenv("PANIC_GATE_PANIC_SHUTDOWN")

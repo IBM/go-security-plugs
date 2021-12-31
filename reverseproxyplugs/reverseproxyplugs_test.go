@@ -33,7 +33,8 @@ var resptest http.Response
 var errTest = "fake error"
 
 var etest error
-var defaultLog = dLog{}
+
+//var defaultLog = dLog{}
 
 func init() {
 	testconfig = []string{"../plugs/examplegate/examplegate.so",
@@ -58,7 +59,7 @@ func InitializeEnv(panic string, err string) {
 		os.Setenv(panic, "true")
 	}
 	os.Setenv("PANIC_GATE_ERROR", err)
-	LoadPlugs(defaultLog, testconfig)
+	LoadPlugs(testconfig)
 }
 
 func TestMain(m *testing.M) {
@@ -72,24 +73,24 @@ func TestLoadPlugs(t *testing.T) {
 
 	InitializeEnv("", "")
 
-	if numTests = LoadPlugs(nil, nil); numTests != 2 {
+	if numTests = LoadPlugs(nil); numTests != 2 {
 		t.Errorf("LoadPlugs expected 2 returned %d\n", numTests)
 	}
 
-	if numTests = LoadPlugs(defaultLog, emptytestconfig); numTests != 2 {
+	if numTests = LoadPlugs(emptytestconfig); numTests != 2 {
 		t.Errorf("LoadPlugs expected 2 returned %d\n", numTests)
 	}
 
-	if numTests = LoadPlugs(defaultLog, falsetestconfig); numTests != 2 {
+	if numTests = LoadPlugs(falsetestconfig); numTests != 2 {
 		t.Errorf("LoadPlugs expected 2 returned %d\n", numTests)
 	}
 
-	if numTests = LoadPlugs(defaultLog, nokeyconfig); numTests != 2 {
+	if numTests = LoadPlugs(nokeyconfig); numTests != 2 {
 		t.Errorf("LoadPlugs expected 2 returned %d\n", numTests)
 	}
 
 	testlog = 0
-	if numTests = LoadPlugs(testlog, testconfig); numTests != 4 {
+	if numTests = LoadPlugs(testconfig); numTests != 4 {
 		t.Errorf("LoadPlugs expected 24returned %d\n", numTests)
 	}
 	if testlog > 0 {
@@ -98,7 +99,7 @@ func TestLoadPlugs(t *testing.T) {
 
 	UnloadPlugs()
 	testlog = 0
-	if numTests = LoadPlugs(testlog, testconfig); numTests != 2 {
+	if numTests = LoadPlugs(testconfig); numTests != 2 {
 		t.Errorf("LoadPlugs expected 2 returned %d\n", numTests)
 	}
 	if testlog > 0 {
@@ -106,22 +107,9 @@ func TestLoadPlugs(t *testing.T) {
 	}
 
 	InitializeEnv("PANIC_GATE_PANIC_INIT", "")
-	if numTests = LoadPlugs(defaultLog, testconfig); numTests != 2 {
+	if numTests = LoadPlugs(testconfig); numTests != 2 {
 		t.Errorf("LoadPlugs expected 2 returned %d\n", numTests)
 	}
-}
-
-//handleRequest
-//HandleRequestPlugs
-//HandleResponsePlugs
-//HandleErrorPlugs
-//ShutdownPlugs
-
-func TestDefaultLog(t *testing.T) {
-	defaultLog.Debugf("Debugf")
-	defaultLog.Infof("Infof")
-	defaultLog.Warnf("Warnf")
-	defaultLog.Errorf("Errorf")
 }
 
 func TestHandleRequestPlugs(t *testing.T) {

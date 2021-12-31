@@ -24,7 +24,6 @@ const name string = "WorkloadSecurityGate"
 type plug struct {
 	name    string
 	version string
-	//log     pluginterfaces.Logger
 	// Add here any other state the extension needs
 	config map[string]string
 }
@@ -399,46 +398,6 @@ func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 	newCtx, cancelFunction := context.WithCancel(req.Context())
 	req = req.WithContext(newCtx)
 
-	/*
-		// = io.NopCloser(bytes.NewBuffer(buf))
-		//buf := make([]byte, 8)
-		//n, err := req.Body.Read(buf)
-		//if n > 0 {
-		//	pi.Log.Infof("Request buf (%d) %s ", n, string(buf))
-		//
-		//}
-
-		//fmt.Printf("Analyze %v %v %v %v\n", testBodyHist, req.Body, req.Body != nil, testBodyHist && req.Body != nil)
-		if testBodyHist && req.Body != nil {
-			go func() {
-				//fmt.Printf("Analyze Start\n")
-				// The original ReadCloser interface is in req.Body
-				// We need to use async func to read bytes from it using .Read(buf)
-				// We than need to send those bytes for analysis and write those bytes to a stream
-				reqBodyOut := newStream()
-				body := req.Body
-				req.Body = reqBodyOut
-
-				//defer body.Close()
-
-				p := make([]byte, 4)
-				for {
-					n, err := body.Read(p)
-					if n > 0 {
-						// mimic sending bytes for analysis
-						//fmt.Printf("Analyze (%d): %s\n", n, string(p[:n]))
-						reqBodyOut.bufChan <- p[:n]
-						//fmt.Printf("Analyze afetr ending to channel\n")
-					}
-					if err == io.EOF {
-						fmt.Printf("Analyze End\n")
-						break
-					}
-
-				}
-			}()
-		}
-	*/
 	timeoutStr := req.Header.Get("X-Block-Async")
 	timeout, err := time.ParseDuration(timeoutStr)
 	if err != nil {
@@ -511,7 +470,6 @@ func NewPlug() pi.RoundTripPlug {
 	p := new(plug)
 	p.version = version
 	p.name = name
-	//pi.Log = l
 	pi.Log.Infof("%s: Initializing - version %v\n", p.name, p.version)
 
 	p.config = make(map[string]string)

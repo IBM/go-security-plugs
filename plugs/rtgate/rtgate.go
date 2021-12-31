@@ -16,7 +16,6 @@ const name string = "RoundTripGate"
 type plug struct {
 	name    string
 	version string
-	//	log     pluginterfaces.Logger
 
 	// Add here any other state the extension needs
 	config map[string]string
@@ -111,7 +110,6 @@ func NewPlug() pi.RoundTripPlug {
 	p := new(plug)
 	p.version = version
 	p.name = name
-	//	pi.Log = l
 	pi.Log.Infof("%s: Initializing - version %v\n", p.name, p.version)
 
 	p.config = make(map[string]string)

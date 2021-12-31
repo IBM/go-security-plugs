@@ -26,10 +26,7 @@ import (
 type RoundTrip struct {
 	next          http.RoundTripper
 	roudTripPlugs []pi.RoundTripPlug
-	//Log           pluginterfaces.Logger
 }
-
-//var Logger pluginterfaces.Logger
 
 func (rt *RoundTrip) approveRequests(reqin *http.Request) (req *http.Request, err error) {
 	req = reqin
@@ -111,12 +108,6 @@ func (rt *RoundTrip) RoundTrip(req *http.Request) (resp *http.Response, err erro
 // A typical plugins value would be plugs = ["plugs/mygate/mygate.so"]
 func New(plugins []string) (rt *RoundTrip) {
 	rt = new(RoundTrip)
-	//if Logger != nil {
-	//	pi.Log = Logger
-	//} else {
-	//	logger, _ := zap.NewProduction()
-	//	pi.Log = logger.Sugar()
-	//}
 	pi.Log.Infof("LoadPlugs started - trying these Plugins %v", plugins)
 
 	defer func() {
@@ -141,14 +132,14 @@ func New(plugins []string) (rt *RoundTrip) {
 			continue
 		}
 
-		newPlug, newPlugTypeOk := newPlugSymbol.(func(pi.Logger) pi.RoundTripPlug)
+		newPlug, newPlugTypeOk := newPlugSymbol.(func() pi.RoundTripPlug)
 		if !newPlugTypeOk {
 			pi.Log.Warnf("Plugin %s skipped - 'NewPlug' symbol is of ilegal type %T", plugPkgPath, newPlugSymbol)
 			continue
 		}
 		// Okie Dokie - this plugin seems ok
 		// Lets instantiate this new Plug
-		p := newPlug(pi.Log)
+		p := newPlug()
 
 		rt.roudTripPlugs = append(rt.roudTripPlugs, p)
 
