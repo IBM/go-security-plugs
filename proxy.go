@@ -9,6 +9,7 @@ import (
 
 	//	"github.com/IBM/go-security-plugs/reverseproxyplugs"
 
+	"github.com/IBM/go-security-plugs/pluginterfaces"
 	"github.com/IBM/go-security-plugs/rtplugs"
 	"go.uber.org/zap"
 
@@ -48,7 +49,7 @@ func main() {
 	log.Infof("Proxy started with %v", env)
 
 	// Have the plugins use the same logger we do
-	rtplugs.Logger = log
+	pluginterfaces.Log = log
 
 	// Hook using RoundTripper
 	if len(env.RoundTripPlugins) > 0 {

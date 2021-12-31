@@ -38,7 +38,7 @@ func Test_plug_Initialize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			NewPlug(tt.args.l)
+			NewPlug()
 		})
 	}
 }
@@ -52,7 +52,7 @@ func Test_plug_Shutdown(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewPlug(defaultLog)
+			p := NewPlug()
 			p.Shutdown()
 		})
 	}
@@ -68,7 +68,7 @@ func Test_plug_PlugName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewPlug(defaultLog)
+			p := NewPlug()
 			if got := p.PlugName(); got != tt.want {
 				t.Errorf("plug.PlugName() = %v, want %v", got, tt.want)
 			}
@@ -86,7 +86,7 @@ func Test_plug_PlugVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewPlug(defaultLog)
+			p := NewPlug()
 			if got := p.PlugVersion(); got != tt.want {
 				t.Errorf("plug.PlugVersion() = %v, want %v", got, tt.want)
 			}
@@ -96,7 +96,7 @@ func Test_plug_PlugVersion(t *testing.T) {
 
 func Test_plug_ApproveResponse(t *testing.T) {
 	t.Run("", func(t *testing.T) {
-		p := NewPlug(defaultLog)
+		p := NewPlug()
 
 		req := httptest.NewRequest("GET", "/some/path", nil)
 		respRecorder := httptest.NewRecorder()
@@ -121,7 +121,7 @@ func Test_plug_ApproveResponse(t *testing.T) {
 
 func Test_plug_ApproveRequest(t *testing.T) {
 	t.Run("", func(t *testing.T) {
-		p := NewPlug(defaultLog)
+		p := NewPlug()
 		req := httptest.NewRequest("GET", "/some/path", nil)
 		req.Header.Set("name", "value")
 

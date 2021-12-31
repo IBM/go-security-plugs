@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/IBM/go-security-plugs/pluginterfaces"
+	pi "github.com/IBM/go-security-plugs/pluginterfaces"
 )
 
 const version string = "0.0.7"
@@ -16,7 +16,7 @@ const name string = "RoundTripGate"
 type plug struct {
 	name    string
 	version string
-	log     pluginterfaces.Logger
+	//	log     pluginterfaces.Logger
 
 	// Add here any other state the extension needs
 	config map[string]string
@@ -31,7 +31,7 @@ func (p *plug) PlugVersion() string {
 }
 
 func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
-	p.log.Infof("%s: ApproveRequest started", p.name)
+	pi.Log.Infof("%s: ApproveRequest started", p.name)
 	if p.config["panicReq"] == "true" {
 		panic("it is fun to panic everywhere! also in ApproveRequest")
 	}
@@ -41,14 +41,14 @@ func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 	}
 
 	if req.Header.Get("X-Block-Req") != "" {
-		p.log.Infof("%s ........... Blocked During Request! returning an error!", p.name)
+		pi.Log.Infof("%s ........... Blocked During Request! returning an error!", p.name)
 		return nil, errors.New("request blocked")
 	}
 
 	for name, values := range req.Header {
 		// Loop over all values for the name.
 		for _, value := range values {
-			p.log.Infof("%s Request Header: %s: %s", p.name, name, value)
+			pi.Log.Infof("%s Request Header: %s: %s", p.name, name, value)
 		}
 	}
 
@@ -61,14 +61,14 @@ func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 		timeoutStr = "5s"
 		timeout, _ = time.ParseDuration(timeoutStr)
 	}
-	p.log.Infof("%s ........... will asynchroniously block after %s", p.name, timeoutStr)
+	pi.Log.Infof("%s ........... will asynchroniously block after %s", p.name, timeoutStr)
 
 	go func(newCtx context.Context, cancelFunction context.CancelFunc, req *http.Request, timeout time.Duration) {
 		select {
 		case <-newCtx.Done():
-			p.log.Infof("Done!")
+			pi.Log.Infof("Done!")
 		case <-time.After(timeout):
-			p.log.Infof("Timeout!")
+			pi.Log.Infof("Timeout!")
 			cancelFunction()
 		}
 	}(newCtx, cancelFunction, req, timeout)
@@ -77,7 +77,7 @@ func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 }
 
 func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Response, error) {
-	p.log.Infof("%s: ApproveResponse started", p.name)
+	pi.Log.Infof("%s: ApproveResponse started", p.name)
 	if p.config["panicResp"] == "true" {
 		panic("it is fun to panic everywhere! also in ApproveResponse")
 	}
@@ -87,32 +87,32 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 	}
 
 	if req.Header.Get("X-Block-Resp") != "" {
-		p.log.Infof("%s ........... Blocked During Response! returning an error!", p.name)
+		pi.Log.Infof("%s ........... Blocked During Response! returning an error!", p.name)
 		return nil, errors.New("response blocked")
 	}
 
 	for name, values := range resp.Header {
 		// Loop over all values for the name.
 		for _, value := range values {
-			p.log.Infof("%s Response Header: %s: %s", p.name, name, value)
+			pi.Log.Infof("%s Response Header: %s: %s", p.name, name, value)
 		}
 	}
 	return resp, nil
 }
 
 func (p *plug) Shutdown() {
-	p.log.Infof("%s: Shutdown", p.name)
+	pi.Log.Infof("%s: Shutdown", p.name)
 	if p.config["panicShutdown"] == "true" {
 		panic("it is fun to panic everywhere! also in Shutdown")
 	}
 }
 
-func NewPlug(l pluginterfaces.Logger) pluginterfaces.RoundTripPlug {
+func NewPlug() pi.RoundTripPlug {
 	p := new(plug)
 	p.version = version
 	p.name = name
-	p.log = l
-	p.log.Infof("%s: Initializing - version %v\n", p.name, p.version)
+	//	pi.Log = l
+	pi.Log.Infof("%s: Initializing - version %v\n", p.name, p.version)
 
 	p.config = make(map[string]string)
 	p.config["panicInitialize"] = os.Getenv("RT_GATE_PANIC_INIT")
@@ -122,7 +122,7 @@ func NewPlug(l pluginterfaces.Logger) pluginterfaces.RoundTripPlug {
 	p.config["errorReq"] = os.Getenv("RT_GATE_ERROR_REQ")
 	p.config["errorResp"] = os.Getenv("RT_GATE_ERROR_RESP")
 
-	p.log.Infof("Plug.config %v", p.config)
+	pi.Log.Infof("Plug.config %v", p.config)
 
 	if p.config["panicInitialize"] == "true" {
 		panic("it is fun to panic everywhere! also in Initialize")

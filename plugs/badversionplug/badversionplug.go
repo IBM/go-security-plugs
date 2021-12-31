@@ -5,15 +5,15 @@ import (
 	"net/http"
 	"runtime"
 
-	"github.com/IBM/go-security-plugs/pluginterfaces"
+	pi "github.com/IBM/go-security-plugs/pluginterfaces"
 )
 
 const version string = "0.0.7"
 
 type plug struct {
 	version string
-	log     pluginterfaces.Logger
-	config  map[string]interface{}
+	//log     pluginterfaces.Logger
+	config map[string]interface{}
 }
 
 func init() {
@@ -22,14 +22,13 @@ func init() {
 
 var Plug plug = plug{version: version}
 
-func (plug) Initialize(l pluginterfaces.Logger, c map[string]interface{}) {
-	Plug.log = l
+func (plug) Initialize(c map[string]interface{}) {
 	Plug.config = c
-	Plug.log.Infof("BadVersionGate: Initializing - version %v\n", Plug.version)
+	pi.Log.Infof("BadVersionGate: Initializing - version %v\n", Plug.version)
 }
 
 func (plug) Shutdown() {
-	Plug.log.Infof("BadVersionGate: Shutdown")
+	pi.Log.Infof("BadVersionGate: Shutdown")
 }
 
 func (plug) PlugName() string {
@@ -42,17 +41,17 @@ func (plug) PlugVersion() string {
 
 //ErrorHook(http.ResponseWriter, *http.Request, error)
 func (plug) ErrorHook(w http.ResponseWriter, req *http.Request, e error) {
-	Plug.log.Infof("BadVersionGate: ErrorHook started")
+	pi.Log.Infof("BadVersionGate: ErrorHook started")
 }
 
 //ResponseHook(*http.Response) error
 func (plug) ResponseHook(resp *http.Response) error {
-	Plug.log.Infof("BadVersionGate: ResponseHook started")
+	pi.Log.Infof("BadVersionGate: ResponseHook started")
 
 	for name, values := range resp.Header {
 		// Loop over all values for the name.
 		for _, value := range values {
-			Plug.log.Infof("BadVersionGate Response Header: %s: %s", name, value)
+			pi.Log.Infof("BadVersionGate Response Header: %s: %s", name, value)
 		}
 	}
 	return nil
@@ -60,12 +59,12 @@ func (plug) ResponseHook(resp *http.Response) error {
 
 //RequestHook(http.ResponseWriter, *http.Request) error
 func (plug) RequestHook(w http.ResponseWriter, r *http.Request) error {
-	Plug.log.Infof("BadVersionGate: RequestHook started")
+	pi.Log.Infof("BadVersionGate: RequestHook started")
 
 	for name, values := range r.Header {
 		// Loop over all values for the name.
 		for _, value := range values {
-			Plug.log.Infof("BadVersionGate Request Header: %s: %s", name, value)
+			pi.Log.Infof("BadVersionGate Request Header: %s: %s", name, value)
 		}
 	}
 	return nil

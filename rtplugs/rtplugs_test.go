@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"testing"
+
+	pi "github.com/IBM/go-security-plugs/pluginterfaces"
 )
 
 type countLog int
@@ -268,11 +270,12 @@ func TestLoadPlugs(t *testing.T) {
 	}
 	rt.Close()
 
-	Logger = testlog
+	log := pi.Log
+	pi.Log = testlog
 	rt = New(testconfig)
 	rt.Close()
 
-	Logger = nil
+	pi.Log = log
 
 	InitializeEnv("RT_GATE_PANIC_INIT", "", "")
 	if rt = New(testconfig); rt != nil {

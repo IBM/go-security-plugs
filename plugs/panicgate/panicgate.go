@@ -4,19 +4,18 @@ import (
 	"errors"
 	"net/http"
 	"os"
-
-	"github.com/IBM/go-security-plugs/pluginterfaces"
+	//pi "github.com/IBM/go-security-plugs/pluginterfaces"
 )
 
 type plug struct {
 	config map[string]string
-	log    pluginterfaces.Logger
+	//log    pluginterfaces.Logger
 }
 
 var Plug plug = plug{}
 
-func (plug) Initialize(l pluginterfaces.Logger) {
-	Plug.log = l
+func (plug) Initialize() {
+	//Plug.log = l
 	Plug.config = make(map[string]string)
 	Plug.config["panicInitialize"] = os.Getenv("PANIC_GATE_PANIC_INIT")
 	Plug.config["panicShutdown"] = os.Getenv("PANIC_GATE_PANIC_SHUTDOWN")

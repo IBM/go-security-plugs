@@ -62,7 +62,7 @@ func LoadPlugs(l pluginterfaces.Logger, plugins []string) (ret int) {
 			switch valType := plugSymbol.(type) {
 			case pluginterfaces.ReverseProxyPlug:
 				p := plugSymbol.(pluginterfaces.ReverseProxyPlug)
-				p.Initialize(log)
+				p.Initialize()
 				reverseProxyPlugs = append(reverseProxyPlugs, p)
 				log.Infof("Plug %s (%s) was succesfully loaded", p.PlugName(), p.PlugVersion())
 				ret++

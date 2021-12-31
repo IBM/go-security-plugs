@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/IBM/go-security-plugs/iofilter"
-	"github.com/IBM/go-security-plugs/pluginterfaces"
+	pi "github.com/IBM/go-security-plugs/pluginterfaces"
 )
 
 const version string = "0.0.1"
@@ -24,7 +24,7 @@ const name string = "WorkloadSecurityGate"
 type plug struct {
 	name    string
 	version string
-	log     pluginterfaces.Logger
+	//log     pluginterfaces.Logger
 	// Add here any other state the extension needs
 	config map[string]string
 }
@@ -43,7 +43,7 @@ func (p *plug) getSortedKeys(m map[string][]string) (sKeys []string) {
 		i++
 	}
 	sort.Strings(sKeys)
-	p.log.Infof("WSGate: sorted keys %s", sKeys)
+	pi.Log.Infof("WSGate: sorted keys %s", sKeys)
 	return
 }
 
@@ -52,7 +52,7 @@ func (p *plug) getSortedVals(m map[string][]string, sKeys []string) (sVals []str
 	for i, k := range sKeys {
 		sVals[i] = strings.Join(m[k], " ")
 	}
-	p.log.Infof("WSGate: sorted vals %s", sVals)
+	pi.Log.Infof("WSGate: sorted vals %s", sVals)
 	return
 }
 
@@ -84,7 +84,7 @@ func (p *plug) hist(str string) []int {
 }
 
 func (p *plug) Shutdown() {
-	p.log.Infof("%s: Shutdown", p.name)
+	pi.Log.Infof("%s: Shutdown", p.name)
 	if p.config["panicShutdown"] == "true" {
 		panic("it is fun to panic everywhere! also in Shutdown")
 	}
@@ -123,17 +123,17 @@ func (p *plug) screenRequest(req *http.Request) error {
 	if err != nil {
 		return fmt.Errorf("illegal req.URL.Host %s", err.Error())
 	}
-	p.log.Infof("Client: %s port %s", cip, cport)
-	p.log.Infof("Server: %s port %s", sip, sport)
+	pi.Log.Infof("Client: %s port %s", cip, cport)
+	pi.Log.Infof("Server: %s port %s", sip, sport)
 
 	// Request principles
-	p.log.Infof("req.Method %s", req.Method)
-	p.log.Infof("req.Proto %s", req.Proto)
-	p.log.Infof("scheme: %s", req.URL.Scheme)
-	p.log.Infof("opaque: %s", req.URL.Opaque)
+	pi.Log.Infof("req.Method %s", req.Method)
+	pi.Log.Infof("req.Proto %s", req.Proto)
+	pi.Log.Infof("scheme: %s", req.URL.Scheme)
+	pi.Log.Infof("opaque: %s", req.URL.Opaque)
 
-	p.log.Infof("ContentLength: %d", req.ContentLength)
-	p.log.Infof("Trailer: %#v", req.Trailer)
+	pi.Log.Infof("ContentLength: %d", req.ContentLength)
+	pi.Log.Infof("Trailer: %#v", req.Trailer)
 
 	// TBD req.Form
 
@@ -141,7 +141,7 @@ func (p *plug) screenRequest(req *http.Request) error {
 	path := req.URL.Path
 	pathhist := p.hist(path)
 	pathSplits := strings.Split(path, "/")
-	p.log.Infof("path aplits %v hist %v", pathSplits, pathhist)
+	pi.Log.Infof("path aplits %v hist %v", pathSplits, pathhist)
 
 	//url quesy string
 	query := req.URL.Query()
@@ -149,9 +149,9 @@ func (p *plug) screenRequest(req *http.Request) error {
 	qvals := p.getSortedVals(query, qkeys)
 	qvalstr := strings.Join(qvals, " ")
 	qvalhist := p.hist(qvalstr)
-	p.log.Infof("query: %#v", query)
-	p.log.Infof("queryKeys: %s", strings.Join(qkeys, " "))
-	p.log.Infof("queryVals: %s %v", qvalstr, qvalhist)
+	pi.Log.Infof("query: %#v", query)
+	pi.Log.Infof("queryKeys: %s", strings.Join(qkeys, " "))
+	pi.Log.Infof("queryVals: %s %v", qvalstr, qvalhist)
 
 	//http headers
 	hkeys := p.getSortedKeys(req.Header)
@@ -181,22 +181,22 @@ func (p *plug) screenRequest(req *http.Request) error {
 			otherHeaderKeys.WriteString(k)
 		}
 	}
-	p.log.Infof("Headers: %#v", req.Header)
-	p.log.Infof("WSGate: allHeaderKeys: %s", allHeaderKeys.String())
-	p.log.Infof("WSGate: allHeaderVals: %s", allHeaderVals.String())
-	p.log.Infof("WSGate: acceptHeaderVals: %s", acceptHeaderVals.String())
-	p.log.Infof("WSGate: contentHeaderVals: %s", contentHeaderVals.String())
-	p.log.Infof("WSGate: userAgentVals: %s", userAgentVals.String())
-	p.log.Infof("WSGate: cookieVals: %s", cookieVals.String())
-	p.log.Infof("WSGate: otherHeaderVals: %s", otherHeaderVals.String())
-	p.log.Infof("WSGate: otherHeaderKeys: %s", otherHeaderKeys.String())
+	pi.Log.Infof("Headers: %#v", req.Header)
+	pi.Log.Infof("WSGate: allHeaderKeys: %s", allHeaderKeys.String())
+	pi.Log.Infof("WSGate: allHeaderVals: %s", allHeaderVals.String())
+	pi.Log.Infof("WSGate: acceptHeaderVals: %s", acceptHeaderVals.String())
+	pi.Log.Infof("WSGate: contentHeaderVals: %s", contentHeaderVals.String())
+	pi.Log.Infof("WSGate: userAgentVals: %s", userAgentVals.String())
+	pi.Log.Infof("WSGate: cookieVals: %s", cookieVals.String())
+	pi.Log.Infof("WSGate: otherHeaderVals: %s", otherHeaderVals.String())
+	pi.Log.Infof("WSGate: otherHeaderKeys: %s", otherHeaderKeys.String())
 
 	//http Trailers
 	tkeys := p.getSortedKeys(req.Trailer)
 	tvals := p.getSortedVals(req.Trailer, tkeys)
-	p.log.Infof("query: %#v", query)
-	p.log.Infof("Trailer Keys: %s", strings.Join(tkeys, " "))
-	p.log.Infof("Trailer Vals: %s", strings.Join(tvals, " "))
+	pi.Log.Infof("query: %#v", query)
+	pi.Log.Infof("Trailer Keys: %s", strings.Join(tkeys, " "))
+	pi.Log.Infof("Trailer Vals: %s", strings.Join(tvals, " "))
 
 	/*
 		// fingerprints representing the sender of the request and the event to be processed
@@ -224,7 +224,7 @@ func (p *plug) screenRequest(req *http.Request) error {
 			userAgentVals,
 			allHeaderKeys,
 			httpinfo["protocol"])
-		p.log(fingerprints)
+		pi.Log(fingerprints)
 		for i, val := range fingerprints {
 			fingerprints[i] = GetMD5Hash(val)
 		}
@@ -371,7 +371,7 @@ func requestFilter(buf []byte) error {
 func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 	testBodyHist := true
 
-	p.log.Infof("%s: ApproveRequest started", p.name)
+	pi.Log.Infof("%s: ApproveRequest started", p.name)
 	if p.config["panicReq"] == "true" {
 		panic("it is fun to panic everywhere! also in ApproveRequest")
 	}
@@ -381,14 +381,14 @@ func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 	}
 
 	if req.Header.Get("X-Block-Req") != "" {
-		p.log.Infof("%s ........... Blocked During Request! returning an error!", p.name)
+		pi.Log.Infof("%s ........... Blocked During Request! returning an error!", p.name)
 		return nil, errors.New("request blocked")
 	}
 
 	for name, values := range req.Header {
 		// Loop over all values for the name.
 		for _, value := range values {
-			p.log.Infof("%s Request Header: %s: %s", p.name, name, value)
+			pi.Log.Infof("%s Request Header: %s: %s", p.name, name, value)
 		}
 	}
 
@@ -404,7 +404,7 @@ func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 		//buf := make([]byte, 8)
 		//n, err := req.Body.Read(buf)
 		//if n > 0 {
-		//	p.log.Infof("Request buf (%d) %s ", n, string(buf))
+		//	pi.Log.Infof("Request buf (%d) %s ", n, string(buf))
 		//
 		//}
 
@@ -454,13 +454,13 @@ func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 		req.Body = iofilter.New(req.Body, requestFilter)
 	}
 
-	p.log.Infof("%s ........... will asynchroniously block after %s", p.name, timeoutStr)
+	pi.Log.Infof("%s ........... will asynchroniously block after %s", p.name, timeoutStr)
 	go func(newCtx context.Context, cancelFunction context.CancelFunc, req *http.Request, timeout time.Duration) {
 		select {
 		case <-newCtx.Done():
-			p.log.Infof("Done! %v", newCtx.Err())
+			pi.Log.Infof("Done! %v", newCtx.Err())
 		case <-time.After(timeout):
-			p.log.Infof("Timeout!")
+			pi.Log.Infof("Timeout!")
 			cancelFunction()
 		}
 	}(newCtx, cancelFunction, req, timeout)
@@ -471,7 +471,7 @@ func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Response, error) {
 	testBodyHist := true
 
-	p.log.Infof("%s: ApproveResponse started", p.name)
+	pi.Log.Infof("%s: ApproveResponse started", p.name)
 	if p.config["panicResp"] == "true" {
 		panic("it is fun to panic everywhere! also in ApproveResponse")
 	}
@@ -481,14 +481,14 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 	}
 
 	if req.Header.Get("X-Block-Resp") != "" {
-		p.log.Infof("%s ........... Blocked During Response! returning an error!", p.name)
+		pi.Log.Infof("%s ........... Blocked During Response! returning an error!", p.name)
 		return nil, errors.New("response blocked")
 	}
 
 	for name, values := range resp.Header {
 		// Loop over all values for the name.
 		for _, value := range values {
-			p.log.Infof("%s Response Header: %s: %s", p.name, name, value)
+			pi.Log.Infof("%s Response Header: %s: %s", p.name, name, value)
 		}
 	}
 
@@ -507,12 +507,12 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 	return resp, nil
 }
 
-func NewPlug(l pluginterfaces.Logger) pluginterfaces.RoundTripPlug {
+func NewPlug() pi.RoundTripPlug {
 	p := new(plug)
 	p.version = version
 	p.name = name
-	p.log = l
-	p.log.Infof("%s: Initializing - version %v\n", p.name, p.version)
+	//pi.Log = l
+	pi.Log.Infof("%s: Initializing - version %v\n", p.name, p.version)
 
 	p.config = make(map[string]string)
 	p.config["panicInitialize"] = os.Getenv("WS_GATE_PANIC_INIT")
@@ -522,7 +522,7 @@ func NewPlug(l pluginterfaces.Logger) pluginterfaces.RoundTripPlug {
 	p.config["errorReq"] = os.Getenv("WS_GATE_ERROR_REQ")
 	p.config["errorResp"] = os.Getenv("WS_GATE_ERROR_RESP")
 
-	p.log.Infof("Plug.config %v", p.config)
+	pi.Log.Infof("Plug.config %v", p.config)
 
 	if p.config["panicInitialize"] == "true" {
 		panic("it is fun to panic everywhere! also in Initialize")

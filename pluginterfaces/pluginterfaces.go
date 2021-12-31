@@ -1,6 +1,10 @@
 package pluginterfaces
 
-import "net/http"
+import (
+	"net/http"
+
+	"go.uber.org/zap"
+)
 
 type Logger interface {
 	Debugf(format string, args ...interface{})
@@ -10,6 +14,8 @@ type Logger interface {
 	Sync() error
 }
 
+var Log Logger
+
 type AnyPlug interface {
 	Shutdown()
 	PlugName() string
@@ -17,7 +23,7 @@ type AnyPlug interface {
 }
 
 type ReverseProxyPlug interface {
-	Initialize(Logger)
+	Initialize()
 	AnyPlug
 	RequestHook(http.ResponseWriter, *http.Request) error
 	ResponseHook(*http.Response) error
@@ -28,4 +34,9 @@ type RoundTripPlug interface {
 	AnyPlug
 	ApproveRequest(*http.Request) (*http.Request, error)
 	ApproveResponse(*http.Request, *http.Response) (*http.Response, error)
+}
+
+func init() {
+	logger, _ := zap.NewProduction()
+	Log = logger.Sugar()
 }

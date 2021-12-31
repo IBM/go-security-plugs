@@ -23,7 +23,7 @@ var defaultLog dLog
 var p plug
 
 func TestMain(m *testing.M) {
-	p.Initialize(defaultLog)
+	p.Initialize()
 	code := m.Run()
 	os.Exit(code)
 }
@@ -41,7 +41,7 @@ func Test_plug_Initialize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p.Initialize(tt.args.l)
+			p.Initialize()
 		})
 	}
 }
@@ -117,7 +117,7 @@ func Test_plug_RequestHook(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var p plug
-			p.Initialize(defaultLog)
+			p.Initialize()
 			req := httptest.NewRequest("GET", "/some/path", nil)
 			req.Header.Set("name", "value")
 			if tt.block {
