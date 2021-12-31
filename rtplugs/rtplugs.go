@@ -99,12 +99,17 @@ func (rt *RoundTrip) RoundTrip(req *http.Request) (resp *http.Response, err erro
 	return
 }
 
-// Use New() to load plugins while initializing or after calling Close()
-// Providing the package with a logger allows
-// The plugins variable is a list of relative/full path to .so plugin files
+// Use New() to load plugins while initializing ( or after calling Close() )
+//
+// The plugins variable is a list of relative/full path to .so plugin files.
+//
 // New() will attempt to load each of the plugins
-// A good practice is to place the plugins in a plugs dir of the package,
-// thereforea typical plugins value would be plugs = ["plugs/mygate/mygate.so"]
+//
+// It is recommended to place the plugins in a plugs dir of the module.
+// this help ensure that plugins are built with the same package dependencies.
+// Only plugins the same package dependencies will be loaded.
+//
+// A typical plugins value would be plugs = ["plugs/mygate/mygate.so"]
 func New(plugins []string) (rt *RoundTrip) {
 	rt = new(RoundTrip)
 	if Logger != nil {
@@ -168,8 +173,9 @@ func (rt *RoundTrip) Transport(t http.RoundTripper) http.RoundTripper {
 }
 
 // Use Close to gracefully shutdown plugs used
-// Note that Close does not unload the .so files
-// Instead, it informs all loaded plugs to gracefully shutdown and cleanup
+//
+// Note that Close does not unload the .so files,
+// instead, it informs all loaded plugs to gracefully shutdown and cleanup
 func (rt *RoundTrip) Close() {
 	defer func() {
 		if r := recover(); r != nil {
