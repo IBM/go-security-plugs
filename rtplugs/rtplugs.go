@@ -30,6 +30,8 @@ type RoundTrip struct {
 	Log           pluginterfaces.Logger
 }
 
+var Logger pluginterfaces.Logger
+
 func (rt *RoundTrip) approveRequests(reqin *http.Request) (req *http.Request, err error) {
 	req = reqin
 	for _, p := range rt.roudTripPlugs {
@@ -105,7 +107,12 @@ func (rt *RoundTrip) RoundTrip(req *http.Request) (resp *http.Response, err erro
 // thereforea typical plugins value would be plugs = ["plugs/mygate/mygate.so"]
 func New(plugins []string) (rt *RoundTrip) {
 	rt = new(RoundTrip)
-	rt.SetLogger(nil)
+	if Logger != nil {
+		rt.Log = Logger
+	} else {
+		logger, _ := zap.NewProduction()
+		rt.Log = logger.Sugar()
+	}
 	rt.Log.Infof("LoadPlugs started - trying these Plugins %v", plugins)
 
 	defer func() {
@@ -158,17 +165,6 @@ func (rt *RoundTrip) Transport(t http.RoundTripper) http.RoundTripper {
 	}
 	rt.next = t
 	return rt
-}
-
-// Set an alternative logger that meets the pluginterfaces.Logger interface
-func (rt *RoundTrip) SetLogger(l pluginterfaces.Logger) {
-	if l == nil {
-		// set the default logger
-		logger, _ := zap.NewProduction()
-		rt.Log = logger.Sugar()
-		return
-	}
-	rt.Log = l
 }
 
 // Use Close to gracefully shutdown plugs used

@@ -47,11 +47,13 @@ func main() {
 
 	log.Infof("Proxy started with %v", env)
 
-	// Hook using RoudTripper
+	// Have the plugins use the same logger we do
+	rtplugs.Logger = log
+
+	// Hook using RoundTripper
 	if len(env.RoundTripPlugins) > 0 {
 		rt := rtplugs.New(env.RoundTripPlugins)
 		if rt != nil {
-			rt.SetLogger(log)
 			defer rt.Close()
 			proxy.Transport = rt.Transport(proxy.Transport)
 		}

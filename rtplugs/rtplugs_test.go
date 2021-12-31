@@ -268,9 +268,11 @@ func TestLoadPlugs(t *testing.T) {
 	}
 	rt.Close()
 
+	Logger = testlog
 	rt = New(testconfig)
-	rt.SetLogger(testlog)
 	rt.Close()
+
+	Logger = nil
 
 	InitializeEnv("RT_GATE_PANIC_INIT", "", "")
 	if rt = New(testconfig); rt != nil {
