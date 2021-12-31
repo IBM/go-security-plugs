@@ -1,16 +1,5 @@
-// The rtplugs package instruments golang http clients that supports a RoundTrip interface
-// It was built and tested against the golang reverseproxy
-//
-// To extend reverseproxy use:
-//		rt := rtplugs.New(logger, pluginList)
-//		if rt != nil {
-//			defer rt.Close()
-//			proxy.Transport = rt.Transport(proxy.Transport)
-//		}
-//
-// While:
-//    logger is the logger interface defined in package plugininterfaces
-//    pluginList is a slice of strings for the path of plugins to load (.so files)
+// The rtplugs package instruments golang http clients that supports a RoundTripper interface.
+// It was built and tested against https://pkg.go.dev/net/http/httputil#ReverseProxy
 package rtplugs
 
 import (
@@ -24,6 +13,17 @@ import (
 )
 
 // An http.RoundTripper interface to be used as Transport for http clients
+//
+// To extend reverseproxy use:
+//		rt := rtplugs.New(pluginList)
+//		if rt != nil {
+//			defer rt.Close()
+//			reverseproxy.Transport = rt.Transport(reverseproxy.Transport)
+//		}
+//
+// While:
+//      pluginList is a slice of strings for the path of plugins (.so files) to load
+//
 type RoundTrip struct {
 	next          http.RoundTripper
 	roudTripPlugs []pluginterfaces.RoundTripPlug
