@@ -19,7 +19,7 @@ You may set the logger that will be used by rtplugs and all plugins by setting
 Use `rt.Close()` to gracefully shutdown the work of plugins
 
 For example:
-```
+```diff
 func main() {
 	logger, _ := zap.NewDevelopment()
 	defer logger.Sync() // flushes buffer, if any
@@ -32,15 +32,15 @@ func main() {
 	proxy := httputil.NewSingleHostReverseProxy(url)
 	var h http.Handler = proxy
 
-	// Have the plugins use the same logger we do    
-	pluginterfaces.Logger = log  // (optional)
-
-	// Hook using RoundTripper
-	rt := rtplugs.New(pluginList)
-	if rt != nil {
-		defer rt.Close()
-		proxy.Transport = rt.Transport(proxy.Transport)
-	}
++	// Have the plugins use the same logger we do    
++	pluginterfaces.Logger = log  // (optional)
++
++	// Hook using RoundTripper
++	rt := rtplugs.New(pluginList)
++	if rt != nil {
++		defer rt.Close()
++		proxy.Transport = rt.Transport(proxy.Transport)
++	}
 
 	http.Handle("/", h)
 	log.Fatal(http.ListenAndServe(":8081", nil))
