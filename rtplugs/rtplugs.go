@@ -20,9 +20,7 @@ import (
 //			reverseproxy.Transport = rt.Transport(reverseproxy.Transport)
 //		}
 //
-// While:
-//      pluginList is a slice of strings for the path of plugins (.so files) to load
-//
+// While `pluginList` is a slice of strings for the path of plugins (.so files) to load
 type RoundTrip struct {
 	next          http.RoundTripper
 	roudTripPlugs []pi.RoundTripPlug
@@ -95,11 +93,11 @@ func (rt *RoundTrip) RoundTrip(req *http.Request) (resp *http.Response, err erro
 	return
 }
 
-// Use New() to load plugins while initializing ( or after calling Close() )
-//
-// The plugins variable is a list of relative/full path to .so plugin files.
-//
 // New() will attempt to load each of the plugins
+//
+// `plugins` is a list of relative/full path to .so plugin files.
+//
+// Load plugins while initializing ( or after calling `Close()`)
 //
 // It is recommended to place the plugins in a plugs dir of the module.
 // this help ensure that plugins are built with the same package dependencies.
@@ -153,7 +151,10 @@ func New(plugins []string) (rt *RoundTrip) {
 	return
 }
 
-// Use Transport to add the loaded plugins to the chain of RoundTrippers used
+// Transport() wraps an existing RoundTripper
+//
+// Once the existing RoundTripper is wrapped, data flowing to and from the
+// existing RoundTripper will be screened using the security plugins
 func (rt *RoundTrip) Transport(t http.RoundTripper) http.RoundTripper {
 	if t == nil {
 		t = http.DefaultTransport
@@ -162,7 +163,7 @@ func (rt *RoundTrip) Transport(t http.RoundTripper) http.RoundTripper {
 	return rt
 }
 
-// Use Close to gracefully shutdown plugs used
+// Close() gracefully shuts down all plugins
 //
 // Note that Close does not unload the .so files,
 // instead, it informs all loaded plugs to gracefully shutdown and cleanup
