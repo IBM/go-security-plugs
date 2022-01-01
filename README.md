@@ -88,19 +88,7 @@ The reqeust headers "X-Sleep", "X-Sleep-Step", "X-Sleep-Num-Steps" control the b
 The reqeust headers  "X-Block-Req", "X-Block-Resp",  "X-Block-Async" control the behaviour of our  [**sample rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate). 
 
 # Historical Notes
-Prior to the use of the RoundTripper interface, the implementation used the proxy's: `proxy.ModifyResponse`, `proxy.ErrorHandler`, and a wrapper to the `http.Handler`. This option was abandoned and the code was left here, either commented out (in examples), or at the no-longer-used [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/reverseproxyplugs)  package.
-    
-    
-## reverseproxyplugs
-
-An older [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/reverseproxyplugs) that does not use the RoundTripper interface is also included in this repository. 
-
-<p align="center">
-    <img src="https://github.com/IBM/go-security-plugs/blob/main/reverseproxyplugs.png" width="700"  />
-</p>
-
-The [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/reverseproxyplugs) has no apperent advetages over the new mechanism that uses the RoundTripper and is left here fully functional for reference and as a second option. The use of this option is included in commented lines in the [**proxy**](https://github.com/IBM/go-security-plugs/tree/proxy.go) code. 
-
+See [**historical**](https://github.com/IBM/go-security-plugs/tree/main/historical) for alternative hooks used in previous versions of this code.
    
 
 
