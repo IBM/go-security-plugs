@@ -1,6 +1,6 @@
 # BadVersionPlug
 
-This gate has a mismatching versions comapred to the reverseproxyplugs
+This gate has a mismatching versions comapred to the rtplugs
 
 It cant be loaded
 
