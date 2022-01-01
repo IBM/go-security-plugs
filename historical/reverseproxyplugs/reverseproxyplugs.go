@@ -6,7 +6,7 @@ import (
 	"plugin"
 	"time"
 
-	pi "github.com/IBM/go-security-plugs/pluginterfaces"
+	pi "github.com/IBM/go-security-plugs/historical/pluginterfaces"
 )
 
 var reverseProxyPlugs []pi.ReverseProxyPlug

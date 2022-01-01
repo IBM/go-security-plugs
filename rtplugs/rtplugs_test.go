@@ -36,7 +36,6 @@ var testconfigAll []string
 var emptytestconfig []string
 var falsetestconfig []string
 var nokeyconfig []string
-var panicconfig []string
 
 //var wtest http.ResponseWriter
 var reqtest *http.Request
@@ -75,7 +74,6 @@ func init() {
 	//testconfig["panic"] = false
 	emptytestconfig = []string{}
 	falsetestconfig = []string{"path/to/nowhere"}
-	panicconfig = []string{"../plugs/panicgate/panicgate.so"}
 
 	reqtest, _ = http.NewRequest("GET", "http://10.0.0.1/", nil)
 	reqtestBlock, _ = http.NewRequest("GET", "http://10.0.0.1/", nil)
