@@ -33,14 +33,14 @@ func main() {
 	var h http.Handler = proxy
 
 	// Have the plugins use the same logger we do    
-    pluginterfaces.Logger = log  // (optional)
+	pluginterfaces.Logger = log  // (optional)
 
-    // Hook using RoundTripper
-    rt := rtplugs.New(pluginList)
-    if rt != nil {
-        defer rt.Close()
-        proxy.Transport = rt.Transport(proxy.Transport)
-    }
+	// Hook using RoundTripper
+	rt := rtplugs.New(pluginList)
+	if rt != nil {
+		defer rt.Close()
+		proxy.Transport = rt.Transport(proxy.Transport)
+	}
 
 	http.Handle("/", h)
 	log.Fatal(http.ListenAndServe(":8081", nil))
