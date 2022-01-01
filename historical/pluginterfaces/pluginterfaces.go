@@ -13,7 +13,7 @@ import (
 //
 // Use instead github.com/IBM/go-security-plugs/pluginterfaces
 //
-// Any logger of this interface can be used by rtlog and all connected plgins
+// Any logger of this interface can be used by reverseproxyplugs and all connected plugins
 type Logger interface {
 	Debugf(format string, args ...interface{})
 	Infof(format string, args ...interface{})
@@ -26,7 +26,7 @@ type Logger interface {
 //
 // Use instead github.com/IBM/go-security-plugs/pluginterfaces
 //
-// The logger for the rtplugs and all connected plgins
+// The logger for the rtplugs and all connected plugins
 var Log Logger
 
 // This is a deprecated version

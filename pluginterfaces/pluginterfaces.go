@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Any logger of this interface can be used by rtlog and all connected plgins
+// Any logger of this interface can be used by rtplugs and all connected plugins
 type Logger interface {
 	Debugf(format string, args ...interface{})
 	Infof(format string, args ...interface{})

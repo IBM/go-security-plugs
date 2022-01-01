@@ -14,7 +14,7 @@ An older [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/m
     <img src="https://github.com/IBM/go-security-plugs/blob/main/historical/reverseproxyplugs.png" width="700"  />
 </p>
 
-The [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/reverseproxyplugs) has no apperent advetages over the new mechanism that uses the RoundTripper and is left here fully functional for reference and as a second option. The use of this option is included in [**historical/proxy**](https://github.com/IBM/go-security-plugs/tree/historical/proxy.go) code. 
+The [**reverseproxyplugs**](https://github.com/IBM/go-security-plugs/tree/main/historical/reverseproxyplugs) has no apperent advetages over the new mechanism that uses the RoundTripper and is left here fully functional for reference and as a second option. The use of this option is included in [**historical/proxy**](https://github.com/IBM/go-security-plugs/tree/main/historical/proxy.go) code. 
 
    
 
