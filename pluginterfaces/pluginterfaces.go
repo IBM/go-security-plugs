@@ -1,3 +1,4 @@
+// Commmon interfaces used by github.com/IBM/go-security-plugs/rtplugs and the plgins it loads
 package pluginterfaces
 
 import (
@@ -15,24 +16,8 @@ type Logger interface {
 	Sync() error
 }
 
-// The logger for the rtplugs and all connected plgins
+// The logger for the rtplugs and all connected plugins
 var Log Logger
-
-// Common plugin interfaces
-type AnyPlug interface {
-	Shutdown()
-	PlugName() string
-	PlugVersion() string
-}
-
-// A plugin based on the older ReverseProxyPlug
-type ReverseProxyPlug interface {
-	Initialize()
-	AnyPlug
-	RequestHook(http.ResponseWriter, *http.Request) error
-	ResponseHook(*http.Response) error
-	ErrorHook(http.ResponseWriter, *http.Request, error)
-}
 
 // A plugin based on the newer RoundTripPlug supports offers this interface
 //
@@ -40,7 +25,9 @@ type ReverseProxyPlug interface {
 //		func NewPlug()  RoundTripPlug {}
 //
 type RoundTripPlug interface {
-	AnyPlug
+	Shutdown()
+	PlugName() string
+	PlugVersion() string
 	ApproveRequest(*http.Request) (*http.Request, error)
 	ApproveResponse(*http.Request, *http.Response) (*http.Response, error)
 }

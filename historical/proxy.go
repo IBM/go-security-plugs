@@ -9,7 +9,7 @@ import (
 
 	"github.com/IBM/go-security-plugs/historical/reverseproxyplugs"
 
-	"github.com/IBM/go-security-plugs/pluginterfaces"
+	"github.com/IBM/go-security-plugs/historical/pluginterfaces"
 	"go.uber.org/zap"
 
 	"github.com/kelseyhightower/envconfig"

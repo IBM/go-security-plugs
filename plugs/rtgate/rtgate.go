@@ -128,11 +128,3 @@ func NewPlug() pi.RoundTripPlug {
 
 	return p
 }
-
-/*
-// Add two integers
-func Add(a int, b int) int {
-	fmt.Printf("\nAdding a=%d and b=%d", a, b)
-	return a + b
-}
-*/

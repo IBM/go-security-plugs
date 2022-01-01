@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/IBM/go-security-plugs/pluginterfaces"
+	"github.com/IBM/go-security-plugs/historical/pluginterfaces"
 )
 
 type dLog struct {

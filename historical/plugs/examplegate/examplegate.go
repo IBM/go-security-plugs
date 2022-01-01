@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	pi "github.com/IBM/go-security-plugs/pluginterfaces"
+	pi "github.com/IBM/go-security-plugs/historical/pluginterfaces"
 )
 
 const version string = "0.0.7"

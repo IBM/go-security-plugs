@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
-	//pi "github.com/IBM/go-security-plugs/pluginterfaces"
+	//pi "github.com/IBM/go-security-plugs/historical/pluginterfaces"
 )
 
 type plug struct {

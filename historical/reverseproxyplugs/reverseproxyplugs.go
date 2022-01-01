@@ -1,3 +1,6 @@
+// This is a deprecated version
+//
+// Use instead github.com/IBM/go-security-plugs/rtplugs
 package reverseproxyplugs
 
 import (
@@ -17,9 +20,11 @@ func init() {
 
 func initialize() {
 	reverseProxyPlugs = []pi.ReverseProxyPlug{}
-	//log = dLog{}
 }
 
+// This is a deprecated version
+//
+// Use instead github.com/IBM/go-security-plugs/rtplugs
 func LoadPlugs(plugins []string) (ret int) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -28,9 +33,6 @@ func LoadPlugs(plugins []string) (ret int) {
 	}()
 	ret = len(reverseProxyPlugs)
 
-	//if l != nil {
-	//	log = l
-	//}
 	for _, plugPkgPath := range plugins {
 		plugPkg, err := plugin.Open(plugPkgPath)
 		if err != nil {
@@ -81,6 +83,9 @@ func handleRequest(h http.Handler, p pi.ReverseProxyPlug) http.Handler {
 	})
 }
 
+// This is a deprecated version
+//
+// Use instead github.com/IBM/go-security-plugs/rtplugs
 func HandleRequestPlugs(h http.Handler) http.Handler {
 	for _, p := range reverseProxyPlugs {
 		h = handleRequest(h, p)
@@ -88,6 +93,9 @@ func HandleRequestPlugs(h http.Handler) http.Handler {
 	return h
 }
 
+// This is a deprecated version
+//
+// Use instead github.com/IBM/go-security-plugs/rtplugs
 func HandleResponsePlugs(resp *http.Response) (e error) {
 	e = nil
 	defer func() {
@@ -111,6 +119,9 @@ func HandleResponsePlugs(resp *http.Response) (e error) {
 	return
 }
 
+// This is a deprecated version
+//
+// Use instead github.com/IBM/go-security-plugs/rtplugs
 func HandleErrorPlugs(w http.ResponseWriter, r *http.Request, e error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -127,6 +138,9 @@ func HandleErrorPlugs(w http.ResponseWriter, r *http.Request, e error) {
 	w.WriteHeader(http.StatusForbidden)
 }
 
+// This is a deprecated version
+//
+// Use instead github.com/IBM/go-security-plugs/rtplugs
 func UnloadPlugs() {
 	defer func() {
 		if r := recover(); r != nil {
