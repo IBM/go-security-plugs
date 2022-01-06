@@ -94,7 +94,7 @@ func (rt *RoundTrip) RoundTrip(req *http.Request) (resp *http.Response, err erro
 	return
 }
 
-// New() will attempt to strat a list of plugins
+// New(pi.Logger) will attempt to strat a list of plugins
 //
 // env RTPLUGS defines a comma seperated list of plugin names
 // A typical RTPLUGS value would be "rtplug,wsplug"
@@ -108,7 +108,7 @@ func (rt *RoundTrip) RoundTrip(req *http.Request) (resp *http.Response, err erro
 // It is recommended to place the dynamic plugins in a plugs dir of the module.
 // this helps ensure that plugins are built with the same package dependencies.
 // Only plugins using the exact same package dependencies will be loaded.
-func New() (rt *RoundTrip) {
+func New(l pi.Logger) (rt *RoundTrip) {
 	defer func() {
 		if r := recover(); r != nil {
 			pi.Log.Warnf("Recovered from panic during rtplugs.New()! One or more plugs may be skipped. Recover: %v", r)
@@ -118,6 +118,9 @@ func New() (rt *RoundTrip) {
 		}
 	}()
 
+	if l != nil {
+		pi.Log = l
+	}
 	// load any dynamic plugins
 	load()
 

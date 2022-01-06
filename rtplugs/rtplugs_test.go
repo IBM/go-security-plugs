@@ -151,10 +151,10 @@ func TestMain(m *testing.M) {
 func TestUnloadPlugs(t *testing.T) {
 	t.Run("", func(t *testing.T) {
 		InitializeEnv()
-		rt = New()
+		rt = New(nil)
 		rt.Close()
 		InitializeEnv("RT_GATE_PANIC_SHUTDOWN", "", "")
-		rt = New()
+		rt = New(nil)
 		rt.Close()
 	})
 }
@@ -170,7 +170,7 @@ func TestTransport(t *testing.T) {
 
 		// Async Timeout with default transport
 		InitializeEnv()
-		rt = New()
+		rt = New(nil)
 		roundtripper = rt.Transport(nil)
 		resp, err = roundtripper.RoundTrip(reqtestBlock)
 		fmt.Printf("TestTransport 4\n")
@@ -185,7 +185,7 @@ func TestTransport(t *testing.T) {
 		// Fake transport
 		fakeRoundTripError = false
 		InitializeEnv()
-		rt = New()
+		rt = New(nil)
 		roundtripper = rt.Transport(fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err != nil {
@@ -199,7 +199,7 @@ func TestTransport(t *testing.T) {
 		// Fake transport with error
 		fakeRoundTripError = true
 		InitializeEnv()
-		rt = New()
+		rt = New(nil)
 		roundtripper = rt.Transport(fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err == nil {
@@ -213,7 +213,7 @@ func TestTransport(t *testing.T) {
 
 		// Fake transport with RTGate Panic at REQ
 		InitializeEnv("RT_GATE_PANIC_REQ")
-		rt = New()
+		rt = New(nil)
 
 		roundtripper = rt.Transport(fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
@@ -227,7 +227,7 @@ func TestTransport(t *testing.T) {
 
 		// Fake transport with RTGate Panic at Resp
 		InitializeEnv("RT_GATE_PANIC_RESP")
-		rt = New()
+		rt = New(nil)
 		roundtripper = rt.Transport(fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err == nil {
@@ -240,7 +240,7 @@ func TestTransport(t *testing.T) {
 
 		// Fake transport with RTGate Error at Req
 		InitializeEnv("", "fake error")
-		rt = New()
+		rt = New(nil)
 		roundtripper = rt.Transport(fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err == nil {
@@ -253,7 +253,7 @@ func TestTransport(t *testing.T) {
 
 		// Fake transport with RTGate Error at Resp
 		InitializeEnv("", "", "fake error")
-		rt = New()
+		rt = New(nil)
 		roundtripper = rt.Transport(fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err == nil {
@@ -272,38 +272,37 @@ func TestLoadPlugs(t *testing.T) {
 
 	InitializeEnv("", "", "", emptytestconfig, emptytestconfig_so)
 	t.Logf("emptytestconfig is %v", emptytestconfig)
-	if rt = New(); rt != nil {
+	if rt = New(nil); rt != nil {
 		t.Errorf("LoadPlugs expected nil\n")
 	}
 
 	InitializeEnv("", "", "", falsetestconfig, falsetestconfig_so)
 	t.Logf("falsetestconfig is %v", falsetestconfig)
-	if rt = New(); rt != nil {
+	if rt = New(nil); rt != nil {
 		t.Errorf("LoadPlugs expected nil\n")
 	}
 
 	InitializeEnv("", "", "", nokeyconfig, nokeyconfig_so)
-	if rt = New(); rt != nil {
+	if rt = New(nil); rt != nil {
 		t.Errorf("LoadPlugs expected nil\n")
 	}
 
 	InitializeEnv("", "", "", testconfigAll, testconfigAll_so)
 	t.Logf("testconfig is %v", testconfigAll)
-	if rt = New(); rt == nil {
+	if rt = New(nil); rt == nil {
 		t.Errorf("LoadPlugs did not expect nil\n")
 	}
 	rt.Close()
 
 	InitializeEnv()
 	log := pi.Log
-	pi.Log = testlog
-	rt = New()
+	rt = New(testlog)
 	rt.Close()
 
 	pi.Log = log
 
 	InitializeEnv("RT_GATE_PANIC_INIT")
-	if rt = New(); rt != nil {
+	if rt = New(nil); rt != nil {
 		t.Errorf("LoadPlugs expected nil\n")
 	}
 }

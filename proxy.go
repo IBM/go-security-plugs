@@ -5,7 +5,6 @@ import (
 	"net/http/httputil"
 	"net/url"
 
-	"github.com/IBM/go-security-plugs/pluginterfaces"
 	"github.com/IBM/go-security-plugs/rtplugs"
 	"go.uber.org/zap"
 )
@@ -23,11 +22,8 @@ func main() {
 	proxy := httputil.NewSingleHostReverseProxy(url)
 	var h http.Handler = proxy
 
-	// Have the plugins use the same logger we do
-	pluginterfaces.Log = log
-
 	// Hook using RoundTripper
-	rt := rtplugs.New()
+	rt := rtplugs.New(log)
 	if rt != nil {
 		defer rt.Close()
 		proxy.Transport = rt.Transport(proxy.Transport)
