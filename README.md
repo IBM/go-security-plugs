@@ -4,7 +4,7 @@ Plugs4Security
 
 The [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs) package uses the http RoundTripper interfce to enable safely extending any go application that uses the http client. More specifically it is designed to enable extensing the [standard go reverseproxy](https://go.dev/src/net/http/httputil/reverseproxy.go) with one or more *secuity extensions*. 
 
-The package not only load extensions, but also recover from any panic situations and handle all errors  from extensions. It is meant to keep the go application safe from harm done by extensions to a certain degree. It does not protect the application from extensions which: use excasive memory, cpu or other system resources (file descriptors etc.). 
+The package not only load extensions, but also recover from any panic situations and handle all errors that may be introduced by extensions. It is meant to keep the go application safe from harm done by extensions to a certain degree. It does not protect the application from extensions which: use excasive memory, cpu or other system resources (file descriptors etc.). 
 
 Using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs), *secuity extensions* of a reverseproxy may:
 
@@ -19,7 +19,7 @@ Using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs),
     2.  The request was cancled __after__ the response code was sent to the client. In this case, closing the connection to the client will signal to the client that the server aborted the service. Closing the connection to the server will signal to the server that the client disconnected and no further service is required. 
 
 
-*Security extensions* such as [**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) can be introduced by third parties as shared libraries and developed seperatly from the main application. Such extensions can later be pluged using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs) to the application. As demonstrated by [**proxy**](https://github.com/IBM/go-security-plugs/tree/proxy.go), [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs) allows dynamically loading the extensions on-demand, based, for example, on the application configuration.
+*Security extensions* such as [**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) can be introduced by third parties as packages and developed seperatly from the main application. Such extensions can later be pluged using [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs) to the application. As demonstrated by [**proxy**](https://github.com/IBM/go-security-plugs/tree/proxy.go), [**rtplugs**](https://github.com/IBM/go-security-plugs/tree/main/rtplugs) supports both static and dynamic loading the extensions on-demand, based, on the application configuration.
 
 <p align="center">
     <img src="https://github.com/IBM/go-security-plugs/blob/main/rtplugins.png" width="700"  />
@@ -49,14 +49,21 @@ An application looking to extend reverseproxy (or any other http client) use the
 
 [**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) demonstrates how a request can be canceled asynchrniously using a security extension. The code allows requests to last for no more than 5 seconds by default. Alternativly timeout can be specified using the reqeust header "X-Block-Async:<duration>". For example: "X-Block-Async:3s" results in a cancel being processed 3 seconds from request. The timeout examplifies an asynchrnious decission to  cancel a request after it was delivered for processing by the server. 
 
-# How to use
+# How to use - static imports of plugs
+Static loading does not require the use of CGO and is exmaplified by the runProxyStatic.sh script
+ 
+Run the `runProxyStatic.sh` script, 
 
-When using go plugs one must ensure that the shared library uses the same package versions as the application. To ensure all plugs use the same package versions as your main app:
-1. Clone the plugs into the plugs directory of yout app (as shown here with the [**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) plug).
-2. Build all plugs in your plugs/ directory (See [**buildPlugs.sh**](https://github.com/IBM/go-security-plugs/blob/main/buildPlugs.sh)) before building/running your app. 
+* `RTPLUGS_PKG` defines the list of plugs you wish to import
+* `RTPLUGS` defines the list of plugs you wish to activate
 
+# How to use - dynamic imports of plugs
+Dynamic loading requires the use of CGO and is exmaplified by the runProxyDyn.sh script
 
+Run the `runProxyDyn.sh` script, Make sure to set the list of plugs you wish to import and activate
 
+* `RTPLUGS_PKG` defines the list of plugs you wish to import
+* `RTPLUGS` defines the list of plugs you wish to activate
 
 To run the example here:
 
@@ -66,7 +73,11 @@ To run the example here:
 ```
 2. in a different window, run build the Plugs and run the proxy:
 ```
-    ./runProxyWithPlugs.sh
+    ./runProxyStatic.sh 
+```
+or 
+```
+    ./runProxyDyn.sh 
 ```
 
 3. using a browser or curl try the url: http://127.0.0.1:8081   and see the logs pile up in the proxy window.

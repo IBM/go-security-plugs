@@ -1,4 +1,4 @@
-package main
+package wsgate
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -19,7 +18,7 @@ import (
 )
 
 const version string = "0.0.1"
-const name string = "WorkloadSecurityGate"
+const name string = "wsgate"
 
 type plug struct {
 	name    string
@@ -466,11 +465,8 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 	return resp, nil
 }
 
-func NewPlug() pi.RoundTripPlug {
-	p := new(plug)
-	p.version = version
-	p.name = name
-	pi.Log.Infof("%s: Initializing - version %v\n", p.name, p.version)
+func (p *plug) Init() {
+	pi.Log.Infof("plug %s: Initializing - version %v", p.name, p.version)
 
 	p.config = make(map[string]string)
 	p.config["panicInitialize"] = os.Getenv("WS_GATE_PANIC_INIT")
@@ -485,11 +481,11 @@ func NewPlug() pi.RoundTripPlug {
 	if p.config["panicInitialize"] == "true" {
 		panic("it is fun to panic everywhere! also in Initialize")
 	}
-	go func() {
-		for {
-			time.Sleep(time.Second)
-			fmt.Printf("NumGoroutine %d\n", runtime.NumGoroutine())
-		}
-	}()
-	return p
+}
+
+func init() {
+	p := new(plug)
+	p.version = version
+	p.name = name
+	pi.RegisterPlug(p)
 }

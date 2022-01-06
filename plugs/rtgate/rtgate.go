@@ -1,4 +1,4 @@
-package main
+package rtgate
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 )
 
 const version string = "0.0.7"
-const name string = "RoundTripGate"
+const name string = "rtgate"
 
 type plug struct {
 	name    string
@@ -31,6 +31,7 @@ func (p *plug) PlugVersion() string {
 
 func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 	pi.Log.Infof("%s: ApproveRequest started", p.name)
+	pi.Log.Infof("Approve Request: panicReq %s", p.config["panicReq"])
 	if p.config["panicReq"] == "true" {
 		panic("it is fun to panic everywhere! also in ApproveRequest")
 	}
@@ -106,11 +107,8 @@ func (p *plug) Shutdown() {
 	}
 }
 
-func NewPlug() pi.RoundTripPlug {
-	p := new(plug)
-	p.version = version
-	p.name = name
-	pi.Log.Infof("%s: Initializing - version %v\n", p.name, p.version)
+func (p *plug) Init() {
+	pi.Log.Infof("plug %s: Initializing - version %v", p.name, p.version)
 
 	p.config = make(map[string]string)
 	p.config["panicInitialize"] = os.Getenv("RT_GATE_PANIC_INIT")
@@ -120,11 +118,14 @@ func NewPlug() pi.RoundTripPlug {
 	p.config["errorReq"] = os.Getenv("RT_GATE_ERROR_REQ")
 	p.config["errorResp"] = os.Getenv("RT_GATE_ERROR_RESP")
 
-	pi.Log.Infof("Plug.config %v", p.config)
-
 	if p.config["panicInitialize"] == "true" {
 		panic("it is fun to panic everywhere! also in Initialize")
 	}
+}
 
-	return p
+func init() {
+	p := new(plug)
+	p.version = version
+	p.name = name
+	pi.RegisterPlug(p)
 }

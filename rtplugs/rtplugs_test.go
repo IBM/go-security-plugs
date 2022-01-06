@@ -31,11 +31,16 @@ func (c countLog) Sync() error {
 }
 
 var testlog countLog
-var testconfig []string
-var testconfigAll []string
-var emptytestconfig []string
-var falsetestconfig []string
-var nokeyconfig []string
+var testconfig string
+var testconfigAll string
+var emptytestconfig string
+var falsetestconfig string
+var nokeyconfig string
+var testconfig_so string
+var testconfigAll_so string
+var emptytestconfig_so string
+var falsetestconfig_so string
+var nokeyconfig_so string
 
 //var wtest http.ResponseWriter
 var reqtest *http.Request
@@ -65,15 +70,15 @@ var defaultLog = dLog{}
 var rt *RoundTrip
 
 func init() {
-	testconfig = []string{"../plugs/rtgate/rtgate.so"}
-	testconfigAll = []string{"../plugs/rtgate/rtgate.so",
-		"../plugs/nopluggate/nopluggate.so",
-		"../plugs/wrongpluggate/wrongpluggate.so",
-		"../plugs/badversionplug/badversionplug.so",
-	}
+	testconfig_so = "../plugs_so/rtgate/rtgate.so"
+	testconfig = "rtgate"
+	testconfigAll_so = "../plugs_so/rtgate/rtgate.so,../badversionplug/badversionplug.so"
+	testconfigAll = "rtgate,nopluggate,badversionplug"
 	//testconfig["panic"] = false
-	emptytestconfig = []string{}
-	falsetestconfig = []string{"path/to/nowhere"}
+	emptytestconfig_so = ""
+	emptytestconfig = ""
+	falsetestconfig = "path/to/nowhere"
+	falsetestconfig = "noplug"
 
 	reqtest, _ = http.NewRequest("GET", "http://10.0.0.1/", nil)
 	reqtestBlock, _ = http.NewRequest("GET", "http://10.0.0.1/", nil)
@@ -87,18 +92,38 @@ func init() {
 
 	resptest.Request = reqtest
 }
-func InitializeEnv(panic string, errReq string, errResp string) {
+func InitializeEnv(params ...string) {
+	fmt.Printf("InitializeEnv %d %v\n", len(params), params)
+
+	switch len(params) {
+	case 5:
+		os.Setenv("RTPLUGS_SO", params[4])
+		os.Setenv("RTPLUGS", params[3])
+	case 4:
+		os.Setenv("RTPLUGS_SO", testconfig_so)
+		os.Setenv("RTPLUGS", params[3])
+	default:
+		os.Setenv("RTPLUGS_SO", testconfig_so)
+		os.Setenv("RTPLUGS", testconfig)
+	}
+
 	os.Setenv("RT_GATE_PANIC_INIT", "false")
 	os.Setenv("RT_GATE_PANIC_SHUTDOWN", "false")
 	os.Setenv("RT_GATE_PANIC_REQ", "false")
 	os.Setenv("RT_GATE_PANIC_RESP", "false")
 	os.Setenv("RT_GATE_PANIC_ERROR_REQ", "")
 	os.Setenv("RT_GATE_PANIC_ERROR_RESP", "")
-	if panic != "" {
-		os.Setenv(panic, "true")
+	os.Setenv("RT_GATE_ERROR_REQ", "")
+	os.Setenv("RT_GATE_ERROR_RESP", "")
+	if len(params) > 0 && params[0] != "" {
+		os.Setenv(params[0], "true")
 	}
-	os.Setenv("RT_GATE_ERROR_REQ", errReq)
-	os.Setenv("RT_GATE_ERROR_RESP", errResp)
+	if len(params) > 1 && params[1] != "" {
+		os.Setenv("RT_GATE_ERROR_REQ", params[1])
+	}
+	if len(params) > 2 && params[2] != "" {
+		os.Setenv("RT_GATE_ERROR_RESP", params[2])
+	}
 }
 
 type FakeRoundTrip struct {
@@ -125,11 +150,11 @@ func TestMain(m *testing.M) {
 
 func TestUnloadPlugs(t *testing.T) {
 	t.Run("", func(t *testing.T) {
-		InitializeEnv("", "", "")
-		rt = New(testconfig)
+		InitializeEnv()
+		rt = New()
 		rt.Close()
 		InitializeEnv("RT_GATE_PANIC_SHUTDOWN", "", "")
-		rt = New(testconfig)
+		rt = New()
 		rt.Close()
 	})
 }
@@ -144,8 +169,8 @@ func TestTransport(t *testing.T) {
 		var resp *http.Response
 
 		// Async Timeout with default transport
-		InitializeEnv("", "", "")
-		rt = New(testconfig)
+		InitializeEnv()
+		rt = New()
 		roundtripper = rt.Transport(nil)
 		resp, err = roundtripper.RoundTrip(reqtestBlock)
 		fmt.Printf("TestTransport 4\n")
@@ -159,8 +184,8 @@ func TestTransport(t *testing.T) {
 
 		// Fake transport
 		fakeRoundTripError = false
-		InitializeEnv("", "", "")
-		rt = New(testconfig)
+		InitializeEnv()
+		rt = New()
 		roundtripper = rt.Transport(fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err != nil {
@@ -173,8 +198,8 @@ func TestTransport(t *testing.T) {
 
 		// Fake transport with error
 		fakeRoundTripError = true
-		InitializeEnv("", "", "")
-		rt = New(testconfig)
+		InitializeEnv()
+		rt = New()
 		roundtripper = rt.Transport(fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err == nil {
@@ -187,8 +212,8 @@ func TestTransport(t *testing.T) {
 		fakeRoundTripError = false
 
 		// Fake transport with RTGate Panic at REQ
-		InitializeEnv("RT_GATE_PANIC_REQ", "", "")
-		rt = New(testconfig)
+		InitializeEnv("RT_GATE_PANIC_REQ")
+		rt = New()
 
 		roundtripper = rt.Transport(fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
@@ -201,8 +226,8 @@ func TestTransport(t *testing.T) {
 		rt.Close()
 
 		// Fake transport with RTGate Panic at Resp
-		InitializeEnv("RT_GATE_PANIC_RESP", "", "")
-		rt = New(testconfig)
+		InitializeEnv("RT_GATE_PANIC_RESP")
+		rt = New()
 		roundtripper = rt.Transport(fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err == nil {
@@ -214,8 +239,8 @@ func TestTransport(t *testing.T) {
 		rt.Close()
 
 		// Fake transport with RTGate Error at Req
-		InitializeEnv("", "fake error", "")
-		rt = New(testconfig)
+		InitializeEnv("", "fake error")
+		rt = New()
 		roundtripper = rt.Transport(fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err == nil {
@@ -228,7 +253,7 @@ func TestTransport(t *testing.T) {
 
 		// Fake transport with RTGate Error at Resp
 		InitializeEnv("", "", "fake error")
-		rt = New(testconfig)
+		rt = New()
 		roundtripper = rt.Transport(fakeRoundTrip)
 		resp, err = roundtripper.RoundTrip(reqtest)
 		if err == nil {
@@ -237,6 +262,7 @@ func TestTransport(t *testing.T) {
 		if resp != nil {
 			t.Errorf("Transport should not return resp\n")
 		}
+		//t.Fatalf("STOP!\n")
 		rt.Close()
 	})
 }
@@ -244,39 +270,40 @@ func TestTransport(t *testing.T) {
 func TestLoadPlugs(t *testing.T) {
 	var rt *RoundTrip
 
-	if rt = New(nil); rt != nil {
-		t.Errorf("LoadPlugs expected nil\n")
-	}
-
+	InitializeEnv("", "", "", emptytestconfig, emptytestconfig_so)
 	t.Logf("emptytestconfig is %v", emptytestconfig)
-	if rt = New(emptytestconfig); rt != nil {
+	if rt = New(); rt != nil {
 		t.Errorf("LoadPlugs expected nil\n")
 	}
 
+	InitializeEnv("", "", "", falsetestconfig, falsetestconfig_so)
 	t.Logf("falsetestconfig is %v", falsetestconfig)
-	if rt = New(falsetestconfig); rt != nil {
+	if rt = New(); rt != nil {
 		t.Errorf("LoadPlugs expected nil\n")
 	}
 
-	if rt = New(nokeyconfig); rt != nil {
+	InitializeEnv("", "", "", nokeyconfig, nokeyconfig_so)
+	if rt = New(); rt != nil {
 		t.Errorf("LoadPlugs expected nil\n")
 	}
 
+	InitializeEnv("", "", "", testconfigAll, testconfigAll_so)
 	t.Logf("testconfig is %v", testconfigAll)
-	if rt = New(testconfigAll); rt == nil {
+	if rt = New(); rt == nil {
 		t.Errorf("LoadPlugs did not expect nil\n")
 	}
 	rt.Close()
 
+	InitializeEnv()
 	log := pi.Log
 	pi.Log = testlog
-	rt = New(testconfig)
+	rt = New()
 	rt.Close()
 
 	pi.Log = log
 
-	InitializeEnv("RT_GATE_PANIC_INIT", "", "")
-	if rt = New(testconfig); rt != nil {
+	InitializeEnv("RT_GATE_PANIC_INIT")
+	if rt = New(); rt != nil {
 		t.Errorf("LoadPlugs expected nil\n")
 	}
 }

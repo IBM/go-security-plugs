@@ -5,7 +5,8 @@ package rtplugs
 import (
 	"errors"
 	"net/http"
-	"plugin"
+	"os"
+	"strings"
 	"time"
 
 	pi "github.com/IBM/go-security-plugs/pluginterfaces"
@@ -22,13 +23,13 @@ import (
 //
 // While `pluginList` is a slice of strings for the path of plugins (.so files) to load
 type RoundTrip struct {
-	next          http.RoundTripper
-	roudTripPlugs []pi.RoundTripPlug
+	next           http.RoundTripper
+	roundTripPlugs []pi.RoundTripPlug
 }
 
 func (rt *RoundTrip) approveRequests(reqin *http.Request) (req *http.Request, err error) {
 	req = reqin
-	for _, p := range rt.roudTripPlugs {
+	for _, p := range rt.roundTripPlugs {
 		start := time.Now()
 		req, err = p.ApproveRequest(req)
 		elapsed := time.Since(start)
@@ -59,7 +60,7 @@ func (rt *RoundTrip) nextRoundTrip(req *http.Request) (resp *http.Response, err 
 
 func (rt *RoundTrip) approveResponse(req *http.Request, respIn *http.Response) (resp *http.Response, err error) {
 	resp = respIn
-	for _, p := range rt.roudTripPlugs {
+	for _, p := range rt.roundTripPlugs {
 		start := time.Now()
 		resp, err = p.ApproveResponse(req, resp)
 		elapsed := time.Since(start)
@@ -93,60 +94,53 @@ func (rt *RoundTrip) RoundTrip(req *http.Request) (resp *http.Response, err erro
 	return
 }
 
-// New() will attempt to load each of the plugins
+// New() will attempt to strat a list of plugins
 //
-// `plugins` is a list of relative/full path to .so plugin files.
+// env RTPLUGS defines a comma seperated list of plugin names
+// A typical RTPLUGS value would be "rtplug,wsplug"
+// The plugins may be added statically (using imports) or dynmaicaly (.so files)
 //
-// Load plugins while initializing ( or after calling `Close()`)
-//
-// It is recommended to place the plugins in a plugs dir of the module.
-// this help ensure that plugins are built with the same package dependencies.
-// Only plugins the same package dependencies will be loaded.
-//
-// A typical plugins value would be plugs = ["plugs/mygate/mygate.so"]
-func New(plugins []string) (rt *RoundTrip) {
-	rt = new(RoundTrip)
-	pi.Log.Infof("LoadPlugs started - trying these Plugins %v", plugins)
-
+// For dynamic plugins:
+// The path of dynamicly included plugins should also be defined in RTPLUGS_SO_PLUGINS
+// env RTPLUGS_SO defines a comma seperated list of .so plugin files
+// relative/full path may be used
+// A typical RTPLUGS_SO value would be "../../plugs/rtplug,../../plugs/wsplug"
+// It is recommended to place the dynamic plugins in a plugs dir of the module.
+// this helps ensure that plugins are built with the same package dependencies.
+// Only plugins using the exact same package dependencies will be loaded.
+func New() (rt *RoundTrip) {
 	defer func() {
 		if r := recover(); r != nil {
-			pi.Log.Warnf("Recovered from panic during New()!\n\tOne or more plugs may be skipped\n\tRecover: %v", r)
+			pi.Log.Warnf("Recovered from panic during rtplugs.New()! One or more plugs may be skipped. Recover: %v", r)
 		}
-		if (rt != nil) && len(rt.roudTripPlugs) == 0 {
+		if (rt != nil) && len(rt.roundTripPlugs) == 0 {
 			rt = nil
 		}
 	}()
 
-	for _, plugPkgPath := range plugins {
-		plugPkg, err := plugin.Open(plugPkgPath)
-		if err != nil {
-			pi.Log.Warnf("Plugin %s skipped - failed to load so file. Err: %v", plugPkgPath, err)
-			continue
-		}
+	// load any dynamic plugins
+	load()
 
-		newPlugSymbol, newPlugSymbolErr := plugPkg.Lookup("NewPlug")
-		if newPlugSymbolErr != nil {
-			pi.Log.Warnf("Plugin %s skipped - missing 'NewPlug' symbol in plugin: %v", plugPkgPath, newPlugSymbolErr)
-			continue
-		}
-
-		newPlug, newPlugTypeOk := newPlugSymbol.(func() pi.RoundTripPlug)
-		if !newPlugTypeOk {
-			pi.Log.Warnf("Plugin %s skipped - 'NewPlug' symbol is of ilegal type %T", plugPkgPath, newPlugSymbol)
-			continue
-		}
-		// Okie Dokie - this plugin seems ok
-		// Lets instantiate this new Plug
-		p := newPlug()
-
-		rt.roudTripPlugs = append(rt.roudTripPlugs, p)
-
-		pi.Log.Infof("Plug %s (%s) was succesfully loaded", p.PlugName(), p.PlugVersion())
+	pluginsStr := os.Getenv("RTPLUGS")
+	if pluginsStr == "" {
+		return
 	}
 
-	pi.Log.Infof("Loaded plugs: %d - %v ", len(rt.roudTripPlugs), rt.roudTripPlugs)
-	if len(rt.roudTripPlugs) == 0 {
-		rt = nil
+	plugins := strings.Split(pluginsStr, ",")
+	pi.Log.Infof("Trying to activate these %d plugins %v", len(plugins), plugins)
+
+	for _, plugName := range plugins {
+		for _, p := range pi.RoundTripPlugs {
+			if p.PlugName() == plugName {
+				p.Init()
+				if rt == nil {
+					rt = new(RoundTrip)
+				}
+				rt.roundTripPlugs = append(rt.roundTripPlugs, p)
+				pi.Log.Infof("Plugin %s is activated", plugName)
+				break
+			}
+		}
 	}
 	return
 }
@@ -174,7 +168,7 @@ func (rt *RoundTrip) Close() {
 		}
 		pi.Log.Sync()
 	}()
-	for _, p := range rt.roudTripPlugs {
+	for _, p := range rt.roundTripPlugs {
 		p.Shutdown()
 	}
 }

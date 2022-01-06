@@ -1,4 +1,4 @@
-package main
+package rtgate
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/IBM/go-security-plugs/pluginterfaces"
+	pi "github.com/IBM/go-security-plugs/pluginterfaces"
 )
 
 type dLog struct {
@@ -19,6 +20,15 @@ func (d dLog) Errorf(format string, args ...interface{}) {}
 func (d dLog) Sync() error                               { return nil }
 
 var defaultLog dLog
+
+func testinit() *plug {
+	p := new(plug)
+	p.version = version
+	p.name = name
+	pi.RegisterPlug(p)
+	p.Init()
+	return p
+}
 
 func TestMain(m *testing.M) {
 	code := m.Run()
@@ -38,7 +48,7 @@ func Test_plug_Initialize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			NewPlug()
+			_ = testinit()
 		})
 	}
 }
@@ -52,7 +62,7 @@ func Test_plug_Shutdown(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewPlug()
+			p := testinit()
 			p.Shutdown()
 		})
 	}
@@ -64,11 +74,11 @@ func Test_plug_PlugName(t *testing.T) {
 		want string
 	}{
 		// TODO: Add test cases.
-		{"", "RoundTripGate"},
+		{"", "rtgate"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewPlug()
+			p := testinit()
 			if got := p.PlugName(); got != tt.want {
 				t.Errorf("plug.PlugName() = %v, want %v", got, tt.want)
 			}
@@ -86,7 +96,7 @@ func Test_plug_PlugVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewPlug()
+			p := testinit()
 			if got := p.PlugVersion(); got != tt.want {
 				t.Errorf("plug.PlugVersion() = %v, want %v", got, tt.want)
 			}
@@ -96,7 +106,7 @@ func Test_plug_PlugVersion(t *testing.T) {
 
 func Test_plug_ApproveResponse(t *testing.T) {
 	t.Run("", func(t *testing.T) {
-		p := NewPlug()
+		p := testinit()
 
 		req := httptest.NewRequest("GET", "/some/path", nil)
 		respRecorder := httptest.NewRecorder()
@@ -121,7 +131,7 @@ func Test_plug_ApproveResponse(t *testing.T) {
 
 func Test_plug_ApproveRequest(t *testing.T) {
 	t.Run("", func(t *testing.T) {
-		p := NewPlug()
+		p := testinit()
 		req := httptest.NewRequest("GET", "/some/path", nil)
 		req.Header.Set("name", "value")
 

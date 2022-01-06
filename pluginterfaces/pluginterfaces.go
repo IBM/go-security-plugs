@@ -25,6 +25,7 @@ var Log Logger
 //		func NewPlug()  RoundTripPlug {}
 //
 type RoundTripPlug interface {
+	Init()
 	Shutdown()
 	PlugName() string
 	PlugVersion() string
@@ -35,4 +36,11 @@ type RoundTripPlug interface {
 func init() {
 	logger, _ := zap.NewDevelopment()
 	Log = logger.Sugar()
+}
+
+var RoundTripPlugs []RoundTripPlug
+
+// RegisterPlug() is called from init() function of plugs
+func RegisterPlug(p RoundTripPlug) {
+	RoundTripPlugs = append(RoundTripPlugs, p)
 }
