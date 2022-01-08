@@ -1,0 +1,6 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: knative-guard
+  labels:
+    name: knative-guard

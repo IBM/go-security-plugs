@@ -538,7 +538,7 @@ func (p *plug) Init() {
 	}
 	p.guardUrl = os.Getenv("WSGATE_GUARD_URL")
 	if p.guardUrl == "" {
-		p.guardUrl = "http://guard"
+		p.guardUrl = "http://ws.knative-guard"
 	}
 
 	p.servingNamespace = os.Getenv("SERVING_NAMESPACE")
