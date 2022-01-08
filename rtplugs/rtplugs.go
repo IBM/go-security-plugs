@@ -23,8 +23,8 @@ import (
 //
 // While `pluginList` is a slice of strings for the path of plugins (.so files) to load
 type RoundTrip struct {
-	next           http.RoundTripper
-	roundTripPlugs []pi.RoundTripPlug
+	next           http.RoundTripper  // the next roundtripper
+	roundTripPlugs []pi.RoundTripPlug // list of activated plugins
 }
 
 func (rt *RoundTrip) approveRequests(reqin *http.Request) (req *http.Request, err error) {
@@ -109,6 +109,18 @@ func (rt *RoundTrip) RoundTrip(req *http.Request) (resp *http.Response, err erro
 // this helps ensure that plugins are built with the same package dependencies.
 // Only plugins using the exact same package dependencies will be loaded.
 func New(l pi.Logger) (rt *RoundTrip) {
+	// Immidiatly return nil if RTPLUGS is not set
+	pluginsStr := os.Getenv("RTPLUGS")
+	if pluginsStr == "" {
+		return
+	}
+
+	// Set logger for the entire RTPLUGS mechanism
+	if l != nil {
+		pi.Log = l
+	}
+
+	// Never panic the caller app from here
 	defer func() {
 		if r := recover(); r != nil {
 			pi.Log.Warnf("Recovered from panic during rtplugs.New()! One or more plugs may be skipped. Recover: %v", r)
@@ -118,16 +130,8 @@ func New(l pi.Logger) (rt *RoundTrip) {
 		}
 	}()
 
-	if l != nil {
-		pi.Log = l
-	}
 	// load any dynamic plugins
 	load()
-
-	pluginsStr := os.Getenv("RTPLUGS")
-	if pluginsStr == "" {
-		return
-	}
 
 	plugins := strings.Split(pluginsStr, ",")
 	pi.Log.Infof("Trying to activate these %d plugins %v", len(plugins), plugins)
@@ -135,6 +139,7 @@ func New(l pi.Logger) (rt *RoundTrip) {
 	for _, plugName := range plugins {
 		for _, p := range pi.RoundTripPlugs {
 			if p.PlugName() == plugName {
+				// found a loaded plugin, lets activate it
 				p.Init()
 				if rt == nil {
 					rt = new(RoundTrip)
@@ -174,4 +179,5 @@ func (rt *RoundTrip) Close() {
 	for _, p := range rt.roundTripPlugs {
 		p.Shutdown()
 	}
+	rt.roundTripPlugs = []pi.RoundTripPlug{}
 }

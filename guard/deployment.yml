@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guard
+  namespace: knative-guard
+  labels:
+    app: guard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: guard
+  template:
+    metadata:
+      labels:
+        app: guard
+    spec:
+      containers:
+      - name: guard
+        image: ko://github.com/IBM/go-security-plugs/guard
+        ports:
+        - containerPort: 80

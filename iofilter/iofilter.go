@@ -117,7 +117,9 @@ func New(src io.ReadCloser, filter func(buf []byte) error, params ...uint) (iof 
 				}
 			}
 			if err != nil {
-				fmt.Printf("(iof *iofilter) Gorutine err %v\n", err)
+				if err.Error() != "EOF" {
+					fmt.Printf("(iof *iofilter) Gorutine err %v\n", err)
+				}
 				return
 			}
 		}
@@ -150,7 +152,7 @@ func (iof *Iofilter) Read(dest []byte) (n int, err error) {
 
 // The io.Close interface of the iofilter
 func (iof *Iofilter) Close() error {
-	fmt.Printf("(iof *iofilter) Close\n")
+	//fmt.Printf("(iof *iofilter) Close\n")
 	iof.closeSrc()
 	return nil
 }

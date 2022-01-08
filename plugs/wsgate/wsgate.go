@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -23,8 +25,28 @@ const name string = "wsgate"
 type plug struct {
 	name    string
 	version string
+
 	// Add here any other state the extension needs
-	config map[string]string
+	config           map[string]string
+	guardUrl         string
+	servingNamespace string
+	servingService   string
+	gateConfig       wsgateConfig
+}
+
+type minmaxFloat32 struct {
+	L float32
+	H float32
+}
+
+type minmaxUint16 struct {
+	L uint16
+	H uint16
+}
+
+type wsgateConfig struct {
+	QsKeys         []minmaxUint16
+	ProcessingTime []minmaxUint16
 }
 
 func GetMD5Hash(text string) string {
@@ -465,6 +487,39 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 	return resp, nil
 }
 
+func (p *plug) fetchConfig() {
+	httpc := http.Client{}
+	req, err := http.NewRequest(http.MethodGet, p.guardUrl+"/fetchConfig", nil)
+	if err != nil {
+		pi.Log.Infof("wsgate getConfig: http.NewRequest error %v", err)
+	}
+	query := req.URL.Query()
+	query.Add("ns", p.servingNamespace)
+	query.Add("srv", p.servingService)
+	req.URL.RawQuery = query.Encode()
+	res, getErr := httpc.Do(req)
+	if getErr != nil {
+		pi.Log.Infof("wsgate getConfig: httpc.Do error %v", getErr)
+		return
+	}
+
+	if res.Body != nil {
+		defer res.Body.Close()
+	}
+
+	body, readErr := ioutil.ReadAll(res.Body)
+	if readErr != nil {
+		pi.Log.Infof("wsgate getConfig: http.NewRequest error %v", readErr)
+	}
+
+	pi.Log.Infof("wsgate getConfig: body will be unmarsheled")
+	jsonErr := json.Unmarshal(body, &p.gateConfig)
+	if jsonErr != nil {
+		pi.Log.Infof("wsgate getConfig: unmarshel error %v", jsonErr)
+	}
+	pi.Log.Infof("wsgate getConfig: ended %v ", p.gateConfig)
+}
+
 func (p *plug) Init() {
 	pi.Log.Infof("plug %s: Initializing - version %v", p.name, p.version)
 
@@ -481,6 +536,21 @@ func (p *plug) Init() {
 	if p.config["panicInitialize"] == "true" {
 		panic("it is fun to panic everywhere! also in Initialize")
 	}
+	p.guardUrl = os.Getenv("WSGATE_GUARD_URL")
+	if p.guardUrl == "" {
+		p.guardUrl = "http://guard"
+	}
+
+	p.servingNamespace = os.Getenv("SERVING_NAMESPACE")
+	if p.servingNamespace == "" {
+		panic("Cant find SERVING_NAMESPACE")
+	}
+	p.servingService = os.Getenv("SERVING_SERVICE")
+	if p.servingService == "" {
+		panic("Cant find SERVING_SERVICE")
+	}
+
+	p.fetchConfig()
 }
 
 func init() {
