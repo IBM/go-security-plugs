@@ -5,16 +5,26 @@ It was built and tested against [ReverseProxy](https://pkg.go.dev/net/http/httpu
 
 To extend reverseproxy use:
 ```
-rt := rtplugs.New(pluginList)
-if rt != nil {
+rt := rtplugs.New(log)  
+if rt != nil {  
+	// We have at least one activated plug
     defer rt.Close()
     reverseproxy.Transport = rt.Transport(reverseproxy.Transport)
 }
 ```  
-While `pluginList` is a slice of strings for the path of plugins (.so files) to load
+The names of plugins that will be activated is taken from the `RTPLUGS` environment variable. 
+Use a comma seperated list for activating more than one plug.
 
-You may set the logger that will be used by rtplugs and all plugins by setting 
-`pluginterfaces.Log` to any logger thet meets the `pluginterfaces.Logger` interface.
+When using dynamic loading, 
+the list of SO files to dynamically load is taken from the `RTPLUGS_SO` environment variable
+Use a comma seperated list for loading more than one plug.
+
+
+
+
+`log` is an optional method to set the logger that will be used by 
+rtplugs and all plugins. 'log needs to meet the `pluginterfaces.Logger` interface.
+If log is set to nil, "go.uber.org/zap" Development template is used.
 
 Use `rt.Close()` to gracefully shutdown the work of plugins
 
@@ -32,12 +42,10 @@ func main() {
 	proxy := httputil.NewSingleHostReverseProxy(url)
 	var h http.Handler = proxy
 
-+	// Have the plugins use the same logger we do    
-+	pluginterfaces.Logger = log  // (optional)
-+
 +	// Hook using RoundTripper
-+	rt := rtplugs.New(pluginList)
++	rt := rtplugs.New(log)
 +	if rt != nil {
++	    // We have at least one activated plug
 +		defer rt.Close()
 +		proxy.Transport = rt.Transport(proxy.Transport)
 +	}
