@@ -7,7 +7,7 @@ To extend reverseproxy use:
 ```
 rt := rtplugs.New(log)  
 if rt != nil {  
-	// We have at least one activated plug
+    // We have at least one activated plug
     defer rt.Close()
     reverseproxy.Transport = rt.Transport(reverseproxy.Transport)
 }
@@ -45,7 +45,7 @@ func main() {
 +	// Hook using RoundTripper
 +	rt := rtplugs.New(log)
 +	if rt != nil {
-+	    // We have at least one activated plug
++		// We have at least one activated plug
 +		defer rt.Close()
 +		proxy.Transport = rt.Transport(proxy.Transport)
 +	}
