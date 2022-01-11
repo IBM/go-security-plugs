@@ -23,8 +23,9 @@ Use a comma seperated list for loading more than one plug.
 
 
 `log` is an optional method to set the logger that will be used by 
-rtplugs and all plugins. 'log needs to meet the `pluginterfaces.Logger` interface.
-If log is set to nil, "go.uber.org/zap" Development template is used.
+rtplugs and all plugins. 
+If `log` is set to nil, "go.uber.org/zap" Development template is used.
+If `log` is set to any other logger meeting the `pluginterfaces.Logger` interface, this logger will be used instead.
 
 Use `rt.Close()` to gracefully shutdown the work of plugins
 
