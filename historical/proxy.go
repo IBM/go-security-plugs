@@ -16,7 +16,7 @@ import (
 )
 
 type config struct {
-	ReverseProxyPlugins []string `split_words:"true"`
+	ReverseProxyPlugs []string `split_words:"true"`
 }
 
 // Eample of a Reverse Proxy using plugs
@@ -44,12 +44,12 @@ func main() {
 
 	log.Infof("Proxy started with %v", env)
 
-	// Have the plugins use the same logger we do
+	// Have the plugs use the same logger we do
 	pluginterfaces.Log = log
 
 	// Hook the request, response and error
-	if len(env.ReverseProxyPlugins) > 0 {
-		reverseproxyplugs.LoadPlugs(env.ReverseProxyPlugins)
+	if len(env.ReverseProxyPlugs) > 0 {
+		reverseproxyplugs.LoadPlugs(env.ReverseProxyPlugs)
 		defer reverseproxyplugs.UnloadPlugs()
 		proxy.ModifyResponse = reverseproxyplugs.HandleResponsePlugs
 		proxy.ErrorHandler = reverseproxyplugs.HandleErrorPlugs

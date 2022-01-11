@@ -11,25 +11,25 @@ import (
 	pi "github.com/IBM/go-security-plugs/pluginterfaces"
 )
 
-// load() will attempt to dynamically load plugins
+// load() will attempt to dynamically load plugs
 //
-// env RTPLUGS_SO_PLUGINS defines a comma seperated list of .so plugin files
+// env RTPLUGS_SO defines a comma seperated list of .so plug files
 // relative/full path may be used
 func load() {
 	defer func() {
 		if r := recover(); r != nil {
-			pi.Log.Warnf("Recovered from panic while loading so plugins. Recover: %v", r)
+			pi.Log.Warnf("Recovered from panic while loading .so plugs. Recover: %v", r)
 		}
 	}()
-	soPluginsStr := os.Getenv("RTPLUGS_SO")
-	if soPluginsStr == "" {
+	soPlugsStr := os.Getenv("RTPLUGS_SO")
+	if soPlugsStr == "" {
 		return
 	}
 
-	soPlugins := strings.Split(soPluginsStr, ",")
-	pi.Log.Infof("Trying to load these %d plugins %v", len(soPlugins), soPlugins)
+	soPlugs := strings.Split(soPlugsStr, ",")
+	pi.Log.Infof("Trying to load these %d plugs %v", len(soPlugs), soPlugs)
 
-	for _, plugPkgPath := range soPlugins {
+	for _, plugPkgPath := range soPlugs {
 		_, err := plugin.Open(plugPkgPath)
 		if err != nil {
 			cwd, _ := os.Getwd()

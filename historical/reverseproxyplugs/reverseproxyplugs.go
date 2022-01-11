@@ -25,7 +25,7 @@ func initialize() {
 // This is a deprecated version
 //
 // Use instead github.com/IBM/go-security-plugs/rtplugs
-func LoadPlugs(plugins []string) (ret int) {
+func LoadPlugs(plugs []string) (ret int) {
 	defer func() {
 		if r := recover(); r != nil {
 			pi.Log.Warnf("Recovered from panic during LoadPlugs!\n\tOne or more plugs may be skipped\n\tRecover: %v", r)
@@ -33,7 +33,7 @@ func LoadPlugs(plugins []string) (ret int) {
 	}()
 	ret = len(reverseProxyPlugs)
 
-	for _, plugPkgPath := range plugins {
+	for _, plugPkgPath := range plugs {
 		plugPkg, err := plugin.Open(plugPkgPath)
 		if err != nil {
 			pi.Log.Infof("Plugin %s skipped - Failed to open plugin. Err: %v", plugPkgPath, err)
@@ -53,7 +53,7 @@ func LoadPlugs(plugins []string) (ret int) {
 			}
 
 		} else {
-			pi.Log.Infof("Cant find Plug symbol in plugin: %s: %v", plugPkgPath, err)
+			pi.Log.Infof("Cant find Plug symbol in plug: %s: %v", plugPkgPath, err)
 			continue
 		}
 	}

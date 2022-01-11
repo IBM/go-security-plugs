@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Any logger of this interface can be used by rtplugs and all connected plugins
+// Any logger of this interface can be used by rtplugs and all connected plugs
 type Logger interface {
 	Debugf(format string, args ...interface{})
 	Infof(format string, args ...interface{})
@@ -16,7 +16,7 @@ type Logger interface {
 	Sync() error
 }
 
-// The logger for the rtplugs and all connected plugins
+// The logger for the rtplugs and all connected plugs
 var Log Logger
 
 // A plugin based on the newer RoundTripPlug supports offers this interface

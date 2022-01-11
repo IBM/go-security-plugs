@@ -12,7 +12,7 @@ if rt != nil {
     reverseproxy.Transport = rt.Transport(reverseproxy.Transport)
 }
 ```  
-The names of plugins that will be activated is taken from the `RTPLUGS` environment variable. 
+The names of plugs that will be activated is taken from the `RTPLUGS` environment variable. 
 Use a comma seperated list for activating more than one plug.
 
 When using dynamic loading, 
@@ -23,11 +23,11 @@ Use a comma seperated list for loading more than one plug.
 
 
 `log` is an optional method to set the logger that will be used by 
-rtplugs and all plugins. 
+rtplugs and all plugs. 
 If `log` is set to nil, "go.uber.org/zap" Development template is used.
 If `log` is set to any other logger meeting the `pluginterfaces.Logger` interface, this logger will be used instead.
 
-Use `rt.Close()` to gracefully shutdown the work of plugins
+Use `rt.Close()` to gracefully shutdown the work of plugs
 
 For example:
 ```diff

@@ -15,16 +15,16 @@ import (
 // An http.RoundTripper interface to be used as Transport for http clients
 //
 // To extend reverseproxy use:
-//		rt := rtplugs.New(pluginList)
+//		rt := rtplugs.New(log)
 //		if rt != nil {
 //			defer rt.Close()
 //			reverseproxy.Transport = rt.Transport(reverseproxy.Transport)
 //		}
 //
-// While `pluginList` is a slice of strings for the path of plugins (.so files) to load
+// While `log` is an optional logger
 type RoundTrip struct {
 	next           http.RoundTripper  // the next roundtripper
-	roundTripPlugs []pi.RoundTripPlug // list of activated plugins
+	roundTripPlugs []pi.RoundTripPlug // list of activated plugs
 }
 
 func (rt *RoundTrip) approveRequests(reqin *http.Request) (req *http.Request, err error) {
@@ -94,24 +94,24 @@ func (rt *RoundTrip) RoundTrip(req *http.Request) (resp *http.Response, err erro
 	return
 }
 
-// New(pi.Logger) will attempt to strat a list of plugins
+// New(pi.Logger) will attempt to strat a list of plugs
 //
-// env RTPLUGS defines a comma seperated list of plugin names
+// env RTPLUGS defines a comma seperated list of plug names
 // A typical RTPLUGS value would be "rtplug,wsplug"
-// The plugins may be added statically (using imports) or dynmaicaly (.so files)
+// The plugs may be added statically (using imports) or dynmaicaly (.so files)
 //
-// For dynamic plugins:
-// The path of dynamicly included plugins should also be defined in RTPLUGS_SO_PLUGINS
-// env RTPLUGS_SO defines a comma seperated list of .so plugin files
+// For dynamically loaded plugs:
+// The path of dynamicly included plugs should also be defined in RTPLUGS_SO
+// env RTPLUGS_SO defines a comma seperated list of .so plug files
 // relative/full path may be used
 // A typical RTPLUGS_SO value would be "../../plugs/rtplug,../../plugs/wsplug"
-// It is recommended to place the dynamic plugins in a plugs dir of the module.
-// this helps ensure that plugins are built with the same package dependencies.
-// Only plugins using the exact same package dependencies will be loaded.
+// It is recommended to place the dynamic plugs in a plugs dir of the module.
+// this helps ensure that plugs are built with the same package dependencies.
+// Only plugs using the exact same package dependencies will be loaded.
 func New(l pi.Logger) (rt *RoundTrip) {
 	// Immidiatly return nil if RTPLUGS is not set
-	pluginsStr := os.Getenv("RTPLUGS")
-	if pluginsStr == "" {
+	plugsStr := os.Getenv("RTPLUGS")
+	if plugsStr == "" {
 		return
 	}
 
@@ -130,16 +130,16 @@ func New(l pi.Logger) (rt *RoundTrip) {
 		}
 	}()
 
-	// load any dynamic plugins
+	// load any dynamic plugs
 	load()
 
-	plugins := strings.Split(pluginsStr, ",")
-	pi.Log.Infof("Trying to activate these %d plugins %v", len(plugins), plugins)
+	plugs := strings.Split(plugsStr, ",")
+	pi.Log.Infof("Trying to activate these %d plugs %v", len(plugs), plugs)
 
-	for _, plugName := range plugins {
+	for _, plugName := range plugs {
 		for _, p := range pi.RoundTripPlugs {
 			if p.PlugName() == plugName {
-				// found a loaded plugin, lets activate it
+				// found a loaded plug, lets activate it
 				p.Init()
 				if rt == nil {
 					rt = new(RoundTrip)
@@ -156,7 +156,7 @@ func New(l pi.Logger) (rt *RoundTrip) {
 // Transport() wraps an existing RoundTripper
 //
 // Once the existing RoundTripper is wrapped, data flowing to and from the
-// existing RoundTripper will be screened using the security plugins
+// existing RoundTripper will be screened using the security plugs
 func (rt *RoundTrip) Transport(t http.RoundTripper) http.RoundTripper {
 	if t == nil {
 		t = http.DefaultTransport
@@ -165,7 +165,7 @@ func (rt *RoundTrip) Transport(t http.RoundTripper) http.RoundTripper {
 	return rt
 }
 
-// Close() gracefully shuts down all plugins
+// Close() gracefully shuts down all plugs
 //
 // Note that Close does not unload the .so files,
 // instead, it informs all loaded plugs to gracefully shutdown and cleanup
