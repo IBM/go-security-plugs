@@ -16,7 +16,7 @@ The names of plugins that will be activated is taken from the `RTPLUGS` environm
 Use a comma seperated list for activating more than one plug.
 
 When using dynamic loading, 
-the list of SO files to dynamically load is taken from the `RTPLUGS_SO` environment variable
+the list of SO files to dynamically load is taken from the `RTPLUGS_SO` environment variable.
 Use a comma seperated list for loading more than one plug.
 
 
