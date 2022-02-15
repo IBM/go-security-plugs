@@ -135,9 +135,12 @@ func New(l pi.Logger) (rt *RoundTrip) {
 
 	plugs := strings.Split(plugsStr, ",")
 	pi.Log.Infof("Trying to activate these %d plugs %v", len(plugs), plugs)
+	pi.Log.Infof("Trying to activate these %d plugs %v", len(pi.RoundTripPlugs), pi.RoundTripPlugs)
 
 	for _, plugName := range plugs {
 		for _, p := range pi.RoundTripPlugs {
+			pi.Log.Infof("p.PlugName() %s", p.PlugName())
+
 			if p.PlugName() == plugName {
 				// found a loaded plug, lets activate it
 				p.Init()

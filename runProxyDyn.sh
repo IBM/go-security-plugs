@@ -4,7 +4,7 @@
 export CGO_ENABLED=1
 
 # List of all supported plug packages (comma seperated)
-RTPLUGS_PKG="github.com/IBM/go-security-plugs/plugs/rtgate,github.com/IBM/go-security-plugs/plugs/wsgate"
+RTPLUGS_PKG="github.com/IBM/go-security-plugs/plugs/rtgate,github.com/IBM/workload-security-guard/wsgate"
 
 # Tel RTPLUGS which plugs to activate (comma seperated)
 export RTPLUGS="wsgate,rtgate"

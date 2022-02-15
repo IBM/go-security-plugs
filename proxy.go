@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 
 	"github.com/IBM/go-security-plugs/rtplugs"
 	"go.uber.org/zap"
@@ -23,6 +24,8 @@ func main() {
 	var h http.Handler = proxy
 
 	// Hook using RoundTripper
+	os.Setenv("SERVING_NAMESPACE", "default")
+	os.Setenv("SERVING_SERVICE", "myserver")
 	rt := rtplugs.New(log)
 	if rt != nil {
 		defer rt.Close()
