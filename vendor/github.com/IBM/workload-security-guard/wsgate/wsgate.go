@@ -7,17 +7,28 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
+
+	spec "github.com/IBM/workload-security-guard/pkg/apis/wsecurity/v1"
+	guardianclientset "github.com/IBM/workload-security-guard/pkg/generated/clientset/guardians"
+	v1 "github.com/IBM/workload-security-guard/pkg/generated/clientset/guardians/typed/wsecurity/v1"
 
 	"github.com/IBM/go-security-plugs/iofilter"
 	pi "github.com/IBM/go-security-plugs/pluginterfaces"
-	"github.com/IBM/workload-security-guard/spec"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
+
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
 )
 
 const version string = "0.0.1"
@@ -28,27 +39,19 @@ type plug struct {
 	version string
 
 	// Add here any other state the extension needs
-	guardUrl   string
-	id         string
-	gateConfig spec.WsGate
-	httpc      http.Client
-	cycle      int
+	guardUrl  string
+	namespace string
+	serviceId string
+	//kClient   corev1.ConfigMapInterface
+	gClient v1.WsecurityV1Interface
+	wsGate  *spec.WsGate
+	//blocked             []string
+	//numOk               uint32
+	lastConsultReported time.Time
+	numConsultsCount    uint16
+	httpc               http.Client
+	cycle               int
 }
-
-type minmaxFloat32 struct {
-	L float32
-	H float32
-}
-
-type minmaxUint16 struct {
-	L uint16
-	H uint16
-}
-
-//type wsgateConfig struct {
-//	QsKeys         []minmaxUint16
-//	ProcessingTime []minmaxUint16
-//}
 
 func GetMD5Hash(text string) string {
 	hasher := md5.New()
@@ -105,24 +108,34 @@ func (p *plug) screenRequest(req *http.Request) error {
 	// TBD req.Form
 
 	rp := new(spec.ReqProfile)
-	//rp.Profile(req, &p.gateConfig.Req)
 	rp.Profile(req)
-	decission := rp.Decide(&p.gateConfig.Req)
+	decission := p.wsGate.Req.Decide(rp)
 	if decission != "" {
-
-		if !p.gateConfig.ConsultGuard {
-			pi.Log.Infof("Gate Decission: %s", decission)
-			p.reportBlock(rp, decission)
-			return errors.New(decission)
+		// potentially consult guard before rejecting
+		pi.Log.Infof("Guardian refused to allow: %s", decission)
+		if p.wsGate.ConsultGuard.Active {
+			minuete := time.Now().Truncate(time.Minute)
+			if p.lastConsultReported != minuete {
+				p.lastConsultReported = minuete
+				p.numConsultsCount = 0
+			}
+			if p.numConsultsCount < p.wsGate.ConsultGuard.RequestsPerMinuete {
+				p.numConsultsCount = p.numConsultsCount + 1
+				pi.Log.Infof("Consulting Guard %d/%d", p.numConsultsCount, p.wsGate.ConsultGuard.RequestsPerMinuete)
+				decission = p.consultOnRequest(rp)
+				//pi.Log.Infof("Guard said: %s", decission)
+			}
 		}
-		decission = p.consult(rp)
-		if decission != "" {
-			pi.Log.Infof("Guard Decission:", decission)
-			p.reportBlock(rp, decission)
+	}
+	if decission == "" {
+		p.reportAllow(rp)
+	} else {
+		pi.Log.Infof("Decission: %s", decission)
+		p.reportBlock(rp, decission)
+		if !p.wsGate.ForceAllow {
 			return errors.New(decission)
 		}
 	}
-	p.aggregate(rp)
 
 	/*
 		//decoded path
@@ -346,7 +359,7 @@ func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 	}
 
 	if testBodyHist && req.Body != nil {
-		fmt.Printf("Analyze Start\n")
+		//fmt.Printf("Analyze Start\n")
 
 		// Asynchrniously stream bytes from the original resp.Body
 		// to a new resp.Body
@@ -389,7 +402,7 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 	}
 
 	if testBodyHist && resp.Body != nil {
-		fmt.Printf("Analyze Start\n")
+		//fmt.Printf("Analyze Start\n")
 
 		// Asynchrniously stream bytes from the original resp.Body
 		// to a new resp.Body
@@ -399,49 +412,26 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 	return resp, nil
 }
 
-func (p *plug) fetchConfig() {
-
-	req, err := http.NewRequest(http.MethodGet, p.guardUrl+"/fetchConfig", nil)
-	if err != nil {
-		pi.Log.Infof("wsgate getConfig: http.NewRequest error %v", err)
-	}
-	query := req.URL.Query()
-	query.Add("sid", p.id)
-	req.URL.RawQuery = query.Encode()
-	res, getErr := p.httpc.Do(req)
-	if getErr != nil {
-		pi.Log.Infof("wsgate getConfig: httpc.Do error %v", getErr)
-		return
-	}
-
-	if res.Body != nil {
-		defer res.Body.Close()
-	}
-
-	body, readErr := ioutil.ReadAll(res.Body)
-	if readErr != nil {
-		pi.Log.Infof("wsgate getConfig: http.NewRequest error %v", readErr)
-	}
-
-	//pi.Log.Infof("wsgate getConfig: unmarshal %s", string(body))
-	jsonErr := json.Unmarshal(body, &p.gateConfig)
-	if jsonErr != nil {
-		pi.Log.Infof("wsgate getConfig: unmarshel error %v", jsonErr)
-	}
-
-	//pi.Log.Infof("wsgate getConfig: ended %v ", p.gateConfig)
-}
-
-func (p *plug) consult(req *spec.ReqProfile) string {
-	postBody, marshalErr := json.Marshal(req)
+func (p *plug) consultOnRequest(reqProfile *spec.ReqProfile) string {
+	postBody, marshalErr := json.Marshal(reqProfile)
 	if marshalErr != nil {
-		log.Fatalf("An Error Occured %v", marshalErr)
-		return fmt.Sprintf("Ilegalg consult %v", marshalErr)
+		log.Printf("consultOnRequest error during marshal: %v", marshalErr)
+		return fmt.Sprintf("Cant marshal in consultOnRequest %v", marshalErr)
 	}
 	reqBody := bytes.NewBuffer(postBody)
-	res, postErr := p.httpc.Post(p.guardUrl+"/consult", "application/json", reqBody)
+	req, err := http.NewRequest(http.MethodPost, p.guardUrl+"/req", reqBody)
+	if err != nil {
+		pi.Log.Infof("wsgate consultOnRequest: http.NewRequest error %v", err)
+	}
+	query := req.URL.Query()
+	query.Add("sid", p.serviceId)
+	query.Add("ns", p.namespace)
+	req.URL.RawQuery = query.Encode()
+
+	res, postErr := p.httpc.Do(req)
+	//res, postErr := p.httpc.Post(p.guardUrl+"/req", "application/json", reqBody)
 	if postErr != nil {
-		pi.Log.Infof("wsgate getConfig: httpc.Do error %v", postErr)
+		pi.Log.Infof("wsgate consultOnRequest: httpc.Do error %v", postErr)
 		return fmt.Sprintf("Guard unavaliable during consult %v", postErr)
 	}
 
@@ -451,27 +441,139 @@ func (p *plug) consult(req *spec.ReqProfile) string {
 
 	body, readErr := ioutil.ReadAll(res.Body)
 	if readErr != nil {
-		pi.Log.Infof("wsgate consult: cant read result error %v", readErr)
+		pi.Log.Infof("wsgate consultOnRequest: response error %v", readErr)
 		return fmt.Sprintf("Guard ilegal response during consult %v", readErr)
 	}
-	if len(body) == 0 {
-		pi.Log.Infof("wsgate consult: response is %s", string(body))
+	if len(body) != 0 {
+		pi.Log.Infof("wsgate consultOnRequest: response is %s", string(body))
 		return fmt.Sprintf("Guard: %s", string(body))
 	}
-	pi.Log.Infof("wsgate consult: approved!")
+	pi.Log.Infof("wsgate consultOnRequest: approved!")
 	return ""
 }
 
 func (p *plug) reportBlock(req *spec.ReqProfile, decission string) {
-
-}
-
-func (p *plug) aggregate(req *spec.ReqProfile) {
+	// build statistics on blocked requests
 	p.cycle--
 	if p.cycle <= 0 {
 		//p.ReportToGuard()
 		p.cycle = 100
 	}
+}
+
+func (p *plug) reportAllow(req *spec.ReqProfile) {
+	// build statistics on allowed requests
+	p.cycle--
+	if p.cycle <= 0 {
+		//p.ReportToGuard()
+		p.cycle = 100
+	}
+}
+
+func (p *plug) initCrd() {
+	var kubeconfig *string
+	if home := homedir.HomeDir(); home != "" {
+		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	} else {
+		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	}
+	flag.Parse()
+
+	// use the current context in kubeconfig
+	cfg, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	if err != nil {
+		panic(err.Error())
+	}
+	guardianClient, err := guardianclientset.NewForConfig(cfg)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	p.gClient = guardianClient.WsecurityV1()
+
+	//clientset, err := kubernetes.NewForConfig(cfg)
+	//if err != nil {
+	//	panic(err.Error())
+	//}
+	//p.kClient = clientset.CoreV1().ConfigMaps("knative-serving")
+
+}
+
+//
+func (p *plug) readCrd(namespace string, serviceId string) *spec.GuardianSpec {
+	g, err := p.gClient.Guardians(namespace).Get(context.TODO(), serviceId, metav1.GetOptions{})
+	if err != nil {
+		pi.Log.Infof("Err during get %s.%s: %s\n", serviceId, namespace, err.Error())
+		//panic(fmt.Sprintf("No Guardian! for %s.%s", serviceId, namespace))
+		return nil
+	}
+	pi.Log.Infof("Found guardian %s.%s\n", serviceId, namespace)
+	fmt.Print((*spec.WsGate)(g.Spec).Marshal(0))
+	return g.Spec
+}
+
+/*
+func (p *plug) readConfigMap() {
+	cm, err := p.kClient.Get(context.TODO(), "guardian", metav1.GetOptions{})
+	if err != nil {
+		fmt.Printf("ConfigMap Error: %v\n", err)
+		panic(err.Error())
+	}
+	p.blockByDefault = cm.Data["BlockByDefault"] != "false"
+	fmt.Printf("ConfigMap: %s\n", cm.Data["BlockByDefault"])
+
+	//	err = json.Unmarshal([]byte(cm.Data["guardian"]), &p.wsGate)
+	//	if err != nil {
+	//		fmt.Printf("ConfigMap Unmarshal Error: %v\n", err)
+	//		panic(err.Error())
+	//	}
+}
+*/
+func (p *plug) fetchConfig() {
+	//p.readConfigMap()
+	gurdianSpec := p.readCrd(p.namespace, p.serviceId)
+	if gurdianSpec == nil {
+		gurdianSpec = p.readCrd("knative-serving", "guardian")
+	}
+	if gurdianSpec == nil {
+		gurdianSpec = new(spec.GuardianSpec)
+		// default gurdianSpec has:
+		// 		gurdianSpec.falseAllow=false
+		// 		gurdianSpec.ConsultGuard.Active = false
+	}
+	p.wsGate = (*spec.WsGate)(gurdianSpec)
+
+	/*
+		req, err := http.NewRequest(http.MethodGet, p.guardUrl+"/config", nil)
+		if err != nil {
+			pi.Log.Infof("wsgate getConfig: http.NewRequest error %v", err)
+		}
+		query := req.URL.Query()
+		query.Add("sid", p.id)
+		req.URL.RawQuery = query.Encode()
+		res, getErr := p.httpc.Do(req)
+		if getErr != nil {
+			pi.Log.Infof("wsgate getConfig: httpc.Do error %v", getErr)
+			return
+		}
+
+		if res.Body != nil {
+			defer res.Body.Close()
+		}
+
+		body, readErr := ioutil.ReadAll(res.Body)
+		if readErr != nil {
+			pi.Log.Infof("wsgate getConfig: read body error %v", readErr)
+		}
+
+		//pi.Log.Infof("wsgate getConfig: unmarshal %s", string(body))
+		jsonErr := json.Unmarshal(body, &p.gateConfig)
+		if jsonErr != nil {
+			pi.Log.Infof("wsgate getConfig: unmarshel error %v", jsonErr)
+		}
+
+		//pi.Log.Infof("wsgate getConfig: ended %v ", p.gateConfig)
+	*/
 }
 
 func (p *plug) Init() {
@@ -490,14 +592,18 @@ func (p *plug) Init() {
 	if servingService == "" {
 		panic("Cant find SERVING_SERVICE")
 	}
-	p.id = servingService + "." + servingNamespace
+	p.serviceId = servingService
+	p.namespace = servingNamespace
 
+	p.initCrd()
 	p.fetchConfig()
 }
 
 func init() {
+	fmt.Printf("WSGATE!!!! Initializing!!!!!!!!!<<<<<<<<<<<__________________>>>>>>>>>>\n")
 	p := new(plug)
 	p.version = version
 	p.name = name
 	pi.RegisterPlug(p)
+	fmt.Printf("WSGATE!!!! Ended Initializing!!!!!!!!!<<<<<<<<<<<__________________>>>>>>>>>>\n")
 }
