@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
+	"k8s.io/client-go/rest"
 
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
@@ -472,18 +473,26 @@ func (p *plug) reportAllow(req *spec.ReqProfile) {
 
 func (p *plug) initCrd() {
 	var kubeconfig *string
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
-	flag.Parse()
+	var cfg *rest.Config
+	var errInCluster error
+	var errOutOfCluster error
+	// creates the in-cluster config
 
-	// use the current context in kubeconfig
-	cfg, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-	if err != nil {
-		panic(err.Error())
+	cfg, errInCluster = rest.InClusterConfig()
+	if errInCluster != nil {
+		if home := homedir.HomeDir(); home != "" {
+			kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+		} else {
+			kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+		}
+		flag.Parse()
+		// use the current context in kubeconfig
+		cfg, errOutOfCluster = clientcmd.BuildConfigFromFlags("", *kubeconfig)
+		if errOutOfCluster != nil {
+			panic(fmt.Sprintf("No Config found! errInCluster %s", errInCluster.Error()))
+		}
 	}
+
 	guardianClient, err := guardianclientset.NewForConfig(cfg)
 	if err != nil {
 		panic(err.Error())
