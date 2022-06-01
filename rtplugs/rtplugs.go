@@ -34,7 +34,7 @@ func (rt *RoundTrip) approveRequests(reqin *http.Request) (req *http.Request, er
 		req, err = p.ApproveRequest(req)
 		elapsed := time.Since(start)
 		if err != nil {
-			pi.Log.Infof("Plug %s: ApproveRequest returned an error %v", p.PlugName(), err)
+			pi.Log.Debugf("Plug %s: ApproveRequest returned an error %v", p.PlugName(), err)
 			req = nil
 			return
 		}
@@ -65,7 +65,7 @@ func (rt *RoundTrip) approveResponse(req *http.Request, respIn *http.Response) (
 		resp, err = p.ApproveResponse(req, resp)
 		elapsed := time.Since(start)
 		if err != nil {
-			pi.Log.Infof("Plug %s: ApproveResponse returned an error %v", p.PlugName(), err)
+			pi.Log.Debugf("Plug %s: ApproveResponse returned an error %v", p.PlugName(), err)
 			resp = nil
 			return
 		}
@@ -134,8 +134,8 @@ func New(l pi.Logger) (rt *RoundTrip) {
 	load()
 
 	plugs := strings.Split(plugsStr, ",")
-	pi.Log.Infof("Trying to activate these %d plugs %v", len(plugs), plugs)
-	pi.Log.Infof("Trying to activate these %d plugs %v", len(pi.RoundTripPlugs), pi.RoundTripPlugs)
+	//pi.Log.Debugf("Trying to activate these %d plugs %v", len(plugs), plugs)
+	//pi.Log.Debugf("Trying to activate these %d plugs %v", len(pi.RoundTripPlugs), pi.RoundTripPlugs)
 
 	for _, plugName := range plugs {
 		for _, p := range pi.RoundTripPlugs {

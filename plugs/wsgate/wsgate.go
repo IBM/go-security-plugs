@@ -342,7 +342,7 @@ func (p *plug) screenResponse(resp *http.Response) error {
 	return nil
 }
 
-func responseFilter(buf []byte) error {
+func responseFilter(buf []byte, state *interface{}) {
 	h := make([]int, 8)
 
 	for _, c := range buf {
@@ -362,10 +362,9 @@ func responseFilter(buf []byte) error {
 	}
 	fmt.Printf("responseFilter Histogram: %v\n", h)
 
-	return nil
 }
 
-func requestFilter(buf []byte) error {
+func requestFilter(buf []byte, state *interface{}) {
 	h := make([]int, 8)
 
 	for _, c := range buf {
@@ -384,8 +383,6 @@ func requestFilter(buf []byte) error {
 		}
 	}
 	fmt.Printf("requestFilter Histogram: %v\n", h)
-
-	return nil
 }
 
 func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {

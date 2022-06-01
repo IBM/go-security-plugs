@@ -19,7 +19,8 @@ type Iofilter struct {
 	numBufs    uint
 	sizeBuf    uint
 	src        io.ReadCloser
-	filter     func(buf []byte) error
+	filter     func(buf []byte, state *interface{})
+	state      *interface{}
 }
 
 // Create a New iofilter to wrap an existing provider of an io.ReadCloser interface
@@ -30,7 +31,7 @@ type Iofilter struct {
 // 2. The size of the buffers (default is 8192)
 // A goroutine will be initiatd to wait on the original provider Read interface
 // and deliver the data to the Readwer using an internal channel
-func New(src io.ReadCloser, filter func(buf []byte) error, params ...uint) (iof *Iofilter) {
+func New(src io.ReadCloser, filter func(buf []byte, state *interface{}), params ...uint) (iof *Iofilter) {
 	var numBufs, sizeBuf uint
 	fmt.Printf("params: %v\n", params)
 	switch len(params) {
@@ -96,7 +97,7 @@ func New(src io.ReadCloser, filter func(buf []byte) error, params ...uint) (iof 
 			n, err = iof.src.Read(iof.inBuf)
 			if n > 0 {
 				//fmt.Printf("(iof *iofilter) Gorutine read %d bytes\n", n)
-				err = iof.filter(iof.inBuf[:n])
+				iof.filter(iof.inBuf[:n], iof.state)
 				if err != nil {
 					//fmt.Printf("(iof *iofilter) Gorutine filter blocked: %v\n", err)
 					return
@@ -169,4 +170,8 @@ func (iof *Iofilter) closeSrc() error {
 	}()
 	iof.src.Close()
 	return nil
+}
+
+func (iof *Iofilter) GetState() interface{} {
+	return iof.state
 }

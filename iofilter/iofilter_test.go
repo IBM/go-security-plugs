@@ -10,16 +10,15 @@ import (
 	"testing/iotest"
 )
 
-func filterOk(buf []byte) error {
-	fmt.Printf("filterOk: %d\n", len(buf))
-	return nil
+func filterOk(buf []byte, state *interface{}) {
+	*state = true
 }
 
-func filterErr(buf []byte) error {
-	return errors.New("Not good")
+func filterErr(buf []byte, state *interface{}) {
+	*state = false
 }
 
-func filterPanic(buf []byte) error {
+func filterPanic(buf []byte, state *interface{}) {
 	panic("OMG...")
 }
 
