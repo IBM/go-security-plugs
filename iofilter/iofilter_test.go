@@ -10,15 +10,27 @@ import (
 	"testing/iotest"
 )
 
-func filterOk(buf []byte, state *interface{}) {
-	*state = true
+type myState struct {
+	stage int
 }
 
-func filterErr(buf []byte, state *interface{}) {
-	*state = false
+func filterOk(buf []byte, state interface{}) {
+	fmt.Printf("filterOk received buf and state\n")
+	fmt.Printf("state (%v, %T)\n", state, state)
+
+	s := state.(*myState)
+
+	s.stage = 1
+	fmt.Printf("filterOk updated state %v\n", state)
 }
 
-func filterPanic(buf []byte, state *interface{}) {
+func filterErr(buf []byte, state interface{}) {
+	s := state.(*myState)
+
+	s.stage = 2
+}
+
+func filterPanic(buf []byte, state interface{}) {
 	panic("OMG...")
 }
 
@@ -47,10 +59,10 @@ func (r *unothodoxReader) Close() error {
 
 func TestNewBadReader(t *testing.T) {
 	ur := new(unothodoxReader)
-
+	state := new(myState)
 	t.Run("unothodoxReader", func(t *testing.T) {
 		ur.closePanic = false
-		r1 := New(ur, filterOk, 7)
+		r1 := New(ur, filterOk, state, 7)
 
 		err1 := iotest.TestReader(r1, []byte(""))
 		if err1 != nil {
@@ -62,7 +74,7 @@ func TestNewBadReader(t *testing.T) {
 		}
 
 		ur.closePanic = true
-		r2 := New(ur, filterOk, 7)
+		r2 := New(ur, filterOk, state, 7)
 		err2 := iotest.TestReader(r2, []byte(""))
 		if err2 != nil {
 			t.Fatal(err2)
@@ -86,7 +98,7 @@ func TestNew(t *testing.T) {
 
 	numBufs := []uint{0, 1, 2, 3, 4, 8192}
 	sizeBufs := []uint{0, 1, 2, 3, 4, 8192}
-
+	state := new(myState)
 	for _, msg := range msgs {
 		t.Run("", func(t *testing.T) {
 			r := io.NopCloser(strings.NewReader(msg))
@@ -96,15 +108,22 @@ func TestNew(t *testing.T) {
 			}
 		})
 		t.Run("", func(t *testing.T) {
-			r := New(io.NopCloser(strings.NewReader(msg)), filterOk)
+			r := New(io.NopCloser(strings.NewReader(msg)), filterOk, state)
 			err := iotest.TestReader(r, []byte(msg))
 			if err != nil {
 				t.Fatal(err)
 			}
+			r.WaitTillDone()
+			fmt.Printf("Completed test with state\n")
+			fmt.Printf("Completed state (%v, %T)\n", state, state)
+			if state.stage == 2 {
+				t.Error("Did not expect to received an error....,", state)
+			}
 		})
+
 		for _, numBuf := range numBufs {
 			t.Run("", func(t *testing.T) {
-				r := New(io.NopCloser(strings.NewReader(msg)), filterOk, numBuf)
+				r := New(io.NopCloser(strings.NewReader(msg)), filterOk, state, numBuf)
 				err := iotest.TestReader(r, []byte(msg))
 				if err != nil {
 					t.Fatal(err)
@@ -112,7 +131,7 @@ func TestNew(t *testing.T) {
 			})
 			for _, sizeBuf := range sizeBufs {
 				t.Run("", func(t *testing.T) {
-					r := New(io.NopCloser(strings.NewReader(msg)), filterOk, numBuf, sizeBuf)
+					r := New(io.NopCloser(strings.NewReader(msg)), filterOk, state, numBuf, sizeBuf)
 					err := iotest.TestReader(r, []byte(msg))
 					if err != nil {
 						t.Fatal(err)
@@ -131,22 +150,26 @@ func TestNew(t *testing.T) {
 				t.Errorf("The code did not panic")
 			}
 		}()
-		r := New(io.NopCloser(strings.NewReader(msg1)), filterOk, 1, 2, 3)
+		r := New(io.NopCloser(strings.NewReader(msg1)), filterOk, state, 1, 2, 3)
 		err := iotest.TestReader(r, []byte(msg1))
 		if err == nil {
 			t.Fatal(err)
 		}
 	})
 	t.Run("", func(t *testing.T) {
-		r := New(io.NopCloser(strings.NewReader(msg1)), filterErr)
+		r := New(io.NopCloser(strings.NewReader(msg1)), filterErr, state)
 		err := iotest.TestReader(r, []byte(msg1))
-		if err == nil {
+		if err != nil {
+			t.Fatal(err)
+		}
+		r.WaitTillDone()
+		if state.stage != 2 {
 			t.Error("Expected error, but returned without one")
 		}
 	})
 
 	t.Run("", func(t *testing.T) {
-		r := New(io.NopCloser(strings.NewReader(msg1)), filterPanic)
+		r := New(io.NopCloser(strings.NewReader(msg1)), filterPanic, state)
 		err := iotest.TestReader(r, []byte(msg1))
 		if err == nil {
 			t.Error("Expected error, but returned without one")

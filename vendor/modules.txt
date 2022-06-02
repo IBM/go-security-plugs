@@ -1,11 +1,5 @@
-# github.com/IBM/workload-security-guard v0.0.5
+# github.com/IBM/workload-security-guard v0.0.21
 ## explicit
-github.com/IBM/workload-security-guard/pkg/apis/wsecurity
-github.com/IBM/workload-security-guard/pkg/apis/wsecurity/v1
-github.com/IBM/workload-security-guard/pkg/generated/clientset/guardians
-github.com/IBM/workload-security-guard/pkg/generated/clientset/guardians/scheme
-github.com/IBM/workload-security-guard/pkg/generated/clientset/guardians/typed/wsecurity/v1
-github.com/IBM/workload-security-guard/wsgate
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/go-logr/logr v1.2.0

@@ -8,6 +8,5 @@ require (
 )
 
 require (
-	github.com/IBM/workload-security-guard v0.0.5
 	k8s.io/client-go v0.22.5 // indirect
 )

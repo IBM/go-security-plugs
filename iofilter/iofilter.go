@@ -19,8 +19,9 @@ type Iofilter struct {
 	numBufs    uint
 	sizeBuf    uint
 	src        io.ReadCloser
-	filter     func(buf []byte, state *interface{})
-	state      *interface{}
+	filter     func(buf []byte, state interface{})
+	state      interface{}
+	done       chan bool
 }
 
 // Create a New iofilter to wrap an existing provider of an io.ReadCloser interface
@@ -31,7 +32,7 @@ type Iofilter struct {
 // 2. The size of the buffers (default is 8192)
 // A goroutine will be initiatd to wait on the original provider Read interface
 // and deliver the data to the Readwer using an internal channel
-func New(src io.ReadCloser, filter func(buf []byte, state *interface{}), params ...uint) (iof *Iofilter) {
+func New(src io.ReadCloser, filter func(buf []byte, state interface{}), state interface{}, params ...uint) (iof *Iofilter) {
 	var numBufs, sizeBuf uint
 	fmt.Printf("params: %v\n", params)
 	switch len(params) {
@@ -61,6 +62,8 @@ func New(src io.ReadCloser, filter func(buf []byte, state *interface{}), params 
 	iof.numBufs = numBufs
 	iof.sizeBuf = sizeBuf
 	iof.filter = filter
+	iof.state = state
+	iof.done = make(chan bool)
 	iof.src = src
 
 	// create s.numBufs buffers
@@ -92,23 +95,20 @@ func New(src io.ReadCloser, filter func(buf []byte, state *interface{}), params 
 
 		var n int
 		var err error
-		for {
+		for err == nil {
 			//fmt.Printf("(iof *iofilter) Gorutine Reading...\n")
 			n, err = iof.src.Read(iof.inBuf)
-			if n > 0 {
+			if n > 0 { // we have data
 				//fmt.Printf("(iof *iofilter) Gorutine read %d bytes\n", n)
 				iof.filter(iof.inBuf[:n], iof.state)
-				if err != nil {
-					//fmt.Printf("(iof *iofilter) Gorutine filter blocked: %v\n", err)
-					return
-				}
+
 				iof.bufChan <- iof.inBuf[:n]
 				// ok, we now have a maximum of s.numBufs-2 in s.bufChan + one buffer s.outBuf
 				// this means we have one free buffer to give to s.inBuf
 				iof.inBubIndex = (iof.inBubIndex + 1) % iof.numBufs
 				iof.inBuf = iof.bufs[iof.inBubIndex]
-			} else {
-				if err == nil {
+			} else { // no data
+				if err == nil { // no data and no err.... bad, bad writter!!
 					fmt.Printf("(iof *iofilter) Gorutine read no bytes, err is nil!\n")
 					// hey, this io.Read interface is not doing as recommended!
 					// "Implementations of Read are discouraged from returning a zero byte count with a nil error"
@@ -117,13 +117,12 @@ func New(src io.ReadCloser, filter func(buf []byte, state *interface{}), params 
 					time.Sleep(100 * time.Millisecond)
 				}
 			}
-			if err != nil {
-				if err.Error() != "EOF" {
-					fmt.Printf("(iof *iofilter) Gorutine err %v\n", err)
-				}
-				return
-			}
 		}
+
+		if err.Error() != "EOF" {
+			fmt.Printf("(iof *iofilter) Gorutine err %v\n", err)
+		}
+		close(iof.done)
 	}()
 
 	return
@@ -172,6 +171,7 @@ func (iof *Iofilter) closeSrc() error {
 	return nil
 }
 
-func (iof *Iofilter) GetState() interface{} {
-	return iof.state
+func (iof *Iofilter) WaitTillDone() {
+	for range iof.done {
+	}
 }

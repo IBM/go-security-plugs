@@ -44,8 +44,7 @@ github.com/Azure/go-autorest/tracing v0.6.0/go.mod h1:+vhtPC754Xsa23ID7GlGsrdKBp
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/IBM/go-security-plugs v1.1.1-0.20220216072757-c6f22992f80e/go.mod h1:zoD5ZaNBDM8Ss3ALuh7f0RdyDgqgUsmMv7DqZQ1djbk=
-github.com/IBM/workload-security-guard v0.0.5 h1:IvKEpnDGOfBlhViQDSPrzB1u59hQs6a71KlFhVE/lb0=
-github.com/IBM/workload-security-guard v0.0.5/go.mod h1:WDkbXIO5jRt1tPZJ25oEV3odIp5eqsES2zvs65LTNwQ=
+github.com/IBM/go-security-plugs v1.1.1-0.20220217135704-2792fac15905/go.mod h1:AOTWSvLhm10DSFg8FCKbq8w+ErZOPtREnD2X12FqewE=
 github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46/go.mod h1:3wb06e3pkSAbeQ52E9H9iFoQsEEwGN64994WTCIhntQ=
 github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=

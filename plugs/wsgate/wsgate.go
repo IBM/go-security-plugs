@@ -34,10 +34,10 @@ type plug struct {
 	gateConfig       wsgateConfig
 }
 
-type minmaxFloat32 struct {
-	L float32
-	H float32
-}
+//type minmaxFloat32 struct {
+//	L float32
+//	H float32
+//}
 
 type minmaxUint16 struct {
 	L uint16
@@ -342,7 +342,7 @@ func (p *plug) screenResponse(resp *http.Response) error {
 	return nil
 }
 
-func responseFilter(buf []byte, state *interface{}) {
+func responseFilter(buf []byte, state interface{}) {
 	h := make([]int, 8)
 
 	for _, c := range buf {
@@ -364,7 +364,7 @@ func responseFilter(buf []byte, state *interface{}) {
 
 }
 
-func requestFilter(buf []byte, state *interface{}) {
+func requestFilter(buf []byte, state interface{}) {
 	h := make([]int, 8)
 
 	for _, c := range buf {
@@ -428,7 +428,7 @@ func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 
 		// Asynchrniously stream bytes from the original resp.Body
 		// to a new resp.Body
-		req.Body = iofilter.New(req.Body, requestFilter)
+		req.Body = iofilter.New(req.Body, requestFilter, make([]int, 8))
 	}
 
 	pi.Log.Infof("%s ........... will asynchroniously block after %s", p.name, timeoutStr)
@@ -478,7 +478,7 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 
 		// Asynchrniously stream bytes from the original resp.Body
 		// to a new resp.Body
-		resp.Body = iofilter.New(resp.Body, responseFilter)
+		resp.Body = iofilter.New(resp.Body, responseFilter, make([]int, 8))
 	}
 
 	return resp, nil
