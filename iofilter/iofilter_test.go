@@ -171,8 +171,8 @@ func TestNew(t *testing.T) {
 	t.Run("", func(t *testing.T) {
 		r := New(io.NopCloser(strings.NewReader(msg1)), filterPanic, state)
 		err := iotest.TestReader(r, []byte(msg1))
-		if err == nil {
-			t.Error("Expected error, but returned without one")
+		if err != nil {
+			t.Error(err)
 		}
 	})
 }
