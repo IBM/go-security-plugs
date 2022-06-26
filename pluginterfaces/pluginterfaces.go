@@ -2,7 +2,6 @@
 package pluginterfaces
 
 import (
-	"fmt"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -43,6 +42,5 @@ var RoundTripPlugs []RoundTripPlug
 
 // RegisterPlug() is called from init() function of plugs
 func RegisterPlug(p RoundTripPlug) {
-	fmt.Printf("*** \tRegistering Plug %s\n", p.PlugName())
 	RoundTripPlugs = append(RoundTripPlugs, p)
 }

@@ -49,38 +49,23 @@ An application looking to extend reverseproxy (or any other http client) use the
 
 [**rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate) demonstrates how a request can be canceled asynchrniously using a security extension. The code allows requests to last for no more than 5 seconds by default. Alternativly timeout can be specified using the reqeust header "X-Block-Async:<duration>". For example: "X-Block-Async:3s" results in a cancel being processed 3 seconds from request. The timeout examplifies an asynchrnious decission to  cancel a request after it was delivered for processing by the server. 
 
-# How to use - static imports of plugs
-Static loading does not require the use of CGO and is exmaplified by the runProxyStatic.sh script
- 
-Run the `runProxyStatic.sh` script, 
-
-* `RTPLUGS_PKG` defines the list of plugs you wish to import
-* `RTPLUGS` defines the list of plugs you wish to activate
-
-# How to use - dynamic imports of plugs
-Dynamic loading requires the use of CGO and is exmaplified by the runProxyDyn.sh script
-
-Run the `runProxyDyn.sh` script, Make sure to set the list of plugs you wish to import and activate
-
-* `RTPLUGS_PKG` defines the list of plugs you wish to import
-* `RTPLUGS` defines the list of plugs you wish to activate
-
-To run the example here:
+# Try it out
 
 1. build and run a sample http server:
 ```
     ./runServer.sh
 ```
-2. in a different window, run build the Plugs and run the proxy:
+3. in a different window, run build the Plugs and run the proxy:
 ```
-    ./runProxyStatic.sh 
+    ./runProxy.sh 
 ```
-or 
-```
-    ./runProxyDyn.sh 
-```
+Optional - Change the plugs defined in runProxy.sh to try different plugs:
 
-3. using a browser or curl try the url: http://127.0.0.1:8081   and see the logs pile up in the proxy window.
+* `RTPLUGS_PKG` defines the list of plug packages you wish to import
+* `RTPLUGS` defines the list of plug names you wish to activate
+
+
+4. using a browser or curl try the url: http://127.0.0.1:8081   and see the logs pile up in the proxy window.
    
     Here are some examples: 
 ```
@@ -98,9 +83,7 @@ The reqeust headers "X-Sleep", "X-Sleep-Step", "X-Sleep-Num-Steps" control the b
 
 The reqeust headers  "X-Block-Req", "X-Block-Resp",  "X-Block-Async" control the behaviour of our  [**sample rtgate**](https://github.com/IBM/go-security-plugs/tree/main/plugs/rtgate). 
 
-# Historical Notes
-See [**historical**](https://github.com/IBM/go-security-plugs/tree/main/historical) for alternative hooks used in previous versions of this code.
-   
+
 
 
     

@@ -109,7 +109,7 @@ func (p *plug) Shutdown() {
 
 func (p *plug) Init() {
 	pi.Log.Infof("plug %s: Initializing - version %v", p.name, p.version)
-
+	pi.Log.Infof("plug %s: Never use in production", p.name)
 	p.config = make(map[string]string)
 	p.config["panicInitialize"] = os.Getenv("RT_GATE_PANIC_INIT")
 	p.config["panicShutdown"] = os.Getenv("RT_GATE_PANIC_SHUTDOWN")

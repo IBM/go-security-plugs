@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/IBM/go-security-plugs/pluginterfaces"
 	pi "github.com/IBM/go-security-plugs/pluginterfaces"
 )
 
@@ -37,7 +36,7 @@ func TestMain(m *testing.M) {
 
 func Test_plug_Initialize(t *testing.T) {
 	type args struct {
-		l pluginterfaces.Logger
+		l pi.Logger
 	}
 	tests := []struct {
 		name string

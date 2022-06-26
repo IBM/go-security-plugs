@@ -1,8 +1,6 @@
 # github.com/kelseyhightower/envconfig v1.4.0
 ## explicit
 github.com/kelseyhightower/envconfig
-# github.com/pkg/errors v0.9.1
-## explicit
 # go.uber.org/atomic v1.7.0
 go.uber.org/atomic
 # go.uber.org/multierr v1.6.0
@@ -15,5 +13,5 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# gopkg.in/yaml.v2 v2.4.0
-## explicit
+# github.com/IBM/go-security-plugs/plugs/rtgate => ./plugs/rtgate
+# github.com/IBM/go-security-plugs/pluginterfaces => ./pluginterfaces

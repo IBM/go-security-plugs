@@ -7,7 +7,6 @@ require (
 	go.uber.org/zap v1.19.1
 )
 
-require (
-	github.com/pkg/errors v0.9.1 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
-)
+replace github.com/IBM/go-security-plugs/plugs/rtgate => ./plugs/rtgate
+
+replace github.com/IBM/go-security-plugs/pluginterfaces => ./pluginterfaces

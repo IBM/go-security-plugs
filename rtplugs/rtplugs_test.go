@@ -11,6 +11,8 @@ import (
 	"testing"
 
 	pi "github.com/IBM/go-security-plugs/pluginterfaces"
+
+	_ "github.com/IBM/go-security-plugs/plugs/rtgate"
 )
 
 type countLog int
@@ -35,12 +37,6 @@ var testconfig string
 var testconfigAll string
 var emptytestconfig string
 var falsetestconfig string
-var nokeyconfig string
-var testconfig_so string
-var testconfigAll_so string
-var emptytestconfig_so string
-var falsetestconfig_so string
-var nokeyconfig_so string
 
 //var wtest http.ResponseWriter
 var reqtest *http.Request
@@ -70,14 +66,10 @@ var defaultLog = dLog{}
 var rt *RoundTrip
 
 func init() {
-	testconfig_so = "../plugs_so/rtgate/rtgate.so"
 	testconfig = "rtgate"
-	testconfigAll_so = "../plugs_so/rtgate/rtgate.so,../badversionplug/badversionplug.so"
-	testconfigAll = "rtgate,nopluggate,badversionplug"
+	testconfigAll = "noplug,rtgate,nothing"
 	//testconfig["panic"] = false
-	emptytestconfig_so = ""
 	emptytestconfig = ""
-	falsetestconfig = "path/to/nowhere"
 	falsetestconfig = "noplug"
 
 	reqtest, _ = http.NewRequest("GET", "http://10.0.0.1/", nil)
@@ -96,14 +88,9 @@ func InitializeEnv(params ...string) {
 	fmt.Printf("InitializeEnv %d %v\n", len(params), params)
 
 	switch len(params) {
-	case 5:
-		os.Setenv("RTPLUGS_SO", params[4])
-		os.Setenv("RTPLUGS", params[3])
 	case 4:
-		os.Setenv("RTPLUGS_SO", testconfig_so)
 		os.Setenv("RTPLUGS", params[3])
 	default:
-		os.Setenv("RTPLUGS_SO", testconfig_so)
 		os.Setenv("RTPLUGS", testconfig)
 	}
 
@@ -270,28 +257,30 @@ func TestTransport(t *testing.T) {
 func TestLoadPlugs(t *testing.T) {
 	var rt *RoundTrip
 
-	InitializeEnv("", "", "", emptytestconfig, emptytestconfig_so)
+	InitializeEnv("", "", "", emptytestconfig)
 	t.Logf("emptytestconfig is %v", emptytestconfig)
 	if rt = New(nil); rt != nil {
 		t.Errorf("LoadPlugs expected nil\n")
 	}
 
-	InitializeEnv("", "", "", falsetestconfig, falsetestconfig_so)
+	InitializeEnv("", "", "", falsetestconfig)
 	t.Logf("falsetestconfig is %v", falsetestconfig)
 	if rt = New(nil); rt != nil {
 		t.Errorf("LoadPlugs expected nil\n")
 	}
 
-	InitializeEnv("", "", "", nokeyconfig, nokeyconfig_so)
-	if rt = New(nil); rt != nil {
-		t.Errorf("LoadPlugs expected nil\n")
+	InitializeEnv("", "", "", testconfig)
+	t.Logf("testconfig is %v", testconfig)
+	if rt = New(nil); rt == nil {
+		t.Errorf("LoadPlugs  did not expect nil\n")
 	}
 
-	InitializeEnv("", "", "", testconfigAll, testconfigAll_so)
+	InitializeEnv("", "", "", testconfigAll)
 	t.Logf("testconfig is %v", testconfigAll)
 	if rt = New(nil); rt == nil {
 		t.Errorf("LoadPlugs did not expect nil\n")
 	}
+
 	rt.Close()
 
 	InitializeEnv()

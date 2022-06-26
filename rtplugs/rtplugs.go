@@ -22,6 +22,7 @@ import (
 //		}
 //
 // While `log` is an optional logger
+//
 type RoundTrip struct {
 	next           http.RoundTripper  // the next roundtripper
 	roundTripPlugs []pi.RoundTripPlug // list of activated plugs
@@ -34,27 +35,25 @@ func (rt *RoundTrip) approveRequests(reqin *http.Request) (req *http.Request, er
 		req, err = p.ApproveRequest(req)
 		elapsed := time.Since(start)
 		if err != nil {
-			pi.Log.Debugf("Plug %s: ApproveRequest returned an error %v", p.PlugName(), err)
+			pi.Log.Debugf("rtplugs Plug %s: ApproveRequest returned an error %v", p.PlugName(), err)
 			req = nil
 			return
 		}
-		pi.Log.Debugf("Plug %s: ApproveRequest took %s", p.PlugName(), elapsed.String())
+		pi.Log.Debugf("rtplugs Plug %s: ApproveRequest took %s", p.PlugName(), elapsed.String())
 	}
 	return
 }
 
 func (rt *RoundTrip) nextRoundTrip(req *http.Request) (resp *http.Response, err error) {
 	start := time.Now()
-	pi.Log.Debugf("nextRoundTrip rt.next.RoundTrip started\n")
 	resp, err = rt.next.RoundTrip(req)
-	pi.Log.Debugf("nextRoundTrip rt.next.RoundTrip ended\n")
 	elapsed := time.Since(start)
 	if err != nil {
-		pi.Log.Infof("nextRoundTrip (i.e. DefaultTransport) returned an error %v", err)
+		pi.Log.Debugf("rtplugs nextRoundTrip (i.e. DefaultTransport) returned an error %v", err)
 		resp = nil
 		return
 	}
-	pi.Log.Debugf("nextRoundTrip (i.e. DefaultTransport) took %s\n", elapsed.String())
+	pi.Log.Debugf("rtplugs nextRoundTrip (i.e. DefaultTransport) took %s\n", elapsed.String())
 	return
 }
 
@@ -65,11 +64,11 @@ func (rt *RoundTrip) approveResponse(req *http.Request, respIn *http.Response) (
 		resp, err = p.ApproveResponse(req, resp)
 		elapsed := time.Since(start)
 		if err != nil {
-			pi.Log.Debugf("Plug %s: ApproveResponse returned an error %v", p.PlugName(), err)
+			pi.Log.Debugf("rtplugs Plug %s: ApproveResponse returned an error %v", p.PlugName(), err)
 			resp = nil
 			return
 		}
-		pi.Log.Debugf("Plug %s: ApproveResponse took %s", p.PlugName(), elapsed.String())
+		pi.Log.Debugf("rtplugs Plug %s: ApproveResponse took %s", p.PlugName(), elapsed.String())
 	}
 	return
 }
@@ -77,18 +76,15 @@ func (rt *RoundTrip) approveResponse(req *http.Request, respIn *http.Response) (
 func (rt *RoundTrip) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	defer func() {
 		if recovered := recover(); recovered != nil {
-			pi.Log.Warnf("Recovered from panic during RoundTrip! Recover: %v\n", recovered)
+			pi.Log.Warnf("rtplus Recovered from panic during RoundTrip! Recover: %v\n", recovered)
 			err = errors.New("paniced during RoundTrip")
 			resp = nil
 		}
 	}()
 
 	if req, err = rt.approveRequests(req); err == nil {
-		pi.Log.Debugf("ApproveRequest ended")
 		if resp, err = rt.nextRoundTrip(req); err == nil {
-			pi.Log.Debugf("nextRoundTrip ended")
 			resp, err = rt.approveResponse(req, resp)
-			pi.Log.Debugf("approveResponse ended")
 		}
 	}
 	return
@@ -99,19 +95,16 @@ func (rt *RoundTrip) RoundTrip(req *http.Request) (resp *http.Response, err erro
 // env RTPLUGS defines a comma seperated list of plug names
 // A typical RTPLUGS value would be "rtplug,wsplug"
 // The plugs may be added statically (using imports) or dynmaicaly (.so files)
-//
-// For dynamically loaded plugs:
-// The path of dynamicly included plugs should also be defined in RTPLUGS_SO
-// env RTPLUGS_SO defines a comma seperated list of .so plug files
-// relative/full path may be used
-// A typical RTPLUGS_SO value would be "../../plugs/rtplug,../../plugs/wsplug"
-// It is recommended to place the dynamic plugs in a plugs dir of the module.
-// this helps ensure that plugs are built with the same package dependencies.
-// Only plugs using the exact same package dependencies will be loaded.
 func New(l pi.Logger) (rt *RoundTrip) {
-	// Immidiatly return nil if RTPLUGS is not set
-	plugsStr := os.Getenv("RTPLUGS")
-	if plugsStr == "" {
+	pluglist := os.Getenv("RTPLUGS")
+	return NewPlugs(pluglist, l)
+}
+
+// NewPlugs(pluglist, pi.Logger) will attempt to strat a list of plugs
+// Use NewPlus rather than New when the list of plugs is managed by the caller
+func NewPlugs(pluglist string, l pi.Logger) (rt *RoundTrip) {
+	// Immidiatly return nil if pluglist is not set
+	if pluglist == "" {
 		return
 	}
 
@@ -123,24 +116,17 @@ func New(l pi.Logger) (rt *RoundTrip) {
 	// Never panic the caller app from here
 	defer func() {
 		if r := recover(); r != nil {
-			pi.Log.Warnf("Recovered from panic during rtplugs.New()! One or more plugs may be skipped. Recover: %v", r)
+			pi.Log.Warnf("rtplugs Recovered from panic during rtplugs.New()! One or more plugs may be skipped. Recover: %v", r)
 		}
 		if (rt != nil) && len(rt.roundTripPlugs) == 0 {
 			rt = nil
 		}
 	}()
 
-	// load any dynamic plugs
-	load()
-
-	plugs := strings.Split(plugsStr, ",")
-	//pi.Log.Debugf("Trying to activate these %d plugs %v", len(plugs), plugs)
-	//pi.Log.Debugf("Trying to activate these %d plugs %v", len(pi.RoundTripPlugs), pi.RoundTripPlugs)
+	plugs := strings.Split(pluglist, ",")
 
 	for _, plugName := range plugs {
 		for _, p := range pi.RoundTripPlugs {
-			pi.Log.Infof("p.PlugName() %s", p.PlugName())
-
 			if p.PlugName() == plugName {
 				// found a loaded plug, lets activate it
 				p.Init()
@@ -148,7 +134,7 @@ func New(l pi.Logger) (rt *RoundTrip) {
 					rt = new(RoundTrip)
 				}
 				rt.roundTripPlugs = append(rt.roundTripPlugs, p)
-				pi.Log.Infof("Plugin %s is activated", plugName)
+				pi.Log.Infof("rtplugs Plugin %s is activated", plugName)
 				break
 			}
 		}
@@ -175,7 +161,7 @@ func (rt *RoundTrip) Transport(t http.RoundTripper) http.RoundTripper {
 func (rt *RoundTrip) Close() {
 	defer func() {
 		if r := recover(); r != nil {
-			pi.Log.Warnf("Recovered from panic during ShutdownPlugs!\n\tOne or more plugs may be skipped\n\tRecover: %v", r)
+			pi.Log.Warnf("rtplugs Recovered from panic during ShutdownPlugs!\n\tOne or more plugs may be skipped\n\tRecover: %v", r)
 		}
 		pi.Log.Sync()
 	}()
