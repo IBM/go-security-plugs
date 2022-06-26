@@ -16,8 +16,8 @@ The names of plugs that will be activated is taken from the `RTPLUGS` environmen
 Use a comma seperated list for activating more than one plug.
 
 When the caller manages the list of plugs (e.g. using its own config files)
-use NewPlugs instead of New.
-The plulist parameter would be used instead of the env RTPLUGS 
+use NewPlugs() instead of New().
+When using NewPlugs, the caller specify the plug list using the pluglist parameter and the env RTPLUGS is ignored.
 ```
 rt := rtplugs.NewPlugs(pluglist, log)  
 if rt != nil {  
