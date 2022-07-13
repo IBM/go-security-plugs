@@ -30,8 +30,6 @@ type RoundTrip struct {
 
 func (rt *RoundTrip) approveRequests(reqin *http.Request) (req *http.Request, err error) {
 	req = reqin
-	pi.Log.Infof("rtplugs approveRequests rt.roundTripPlugs %v", rt.roundTripPlugs)
-
 	for _, p := range rt.roundTripPlugs {
 		start := time.Now()
 		req, err = p.ApproveRequest(req)
@@ -41,7 +39,7 @@ func (rt *RoundTrip) approveRequests(reqin *http.Request) (req *http.Request, er
 			req = nil
 			return
 		}
-		pi.Log.Infof("rtplugs Plug %s: ApproveRequest took %s", p.PlugName(), elapsed.String())
+		pi.Log.Debugf("rtplugs Plug %s: ApproveRequest took %s", p.PlugName(), elapsed.String())
 	}
 	return
 }
@@ -55,13 +53,11 @@ func (rt *RoundTrip) nextRoundTrip(req *http.Request) (resp *http.Response, err 
 		resp = nil
 		return
 	}
-	pi.Log.Infof("rtplugs nextRoundTrip (i.e. DefaultTransport) took %s\n", elapsed.String())
+	pi.Log.Debugf("rtplugs nextRoundTrip (i.e. DefaultTransport) took %s\n", elapsed.String())
 	return
 }
 
 func (rt *RoundTrip) approveResponse(req *http.Request, respIn *http.Response) (resp *http.Response, err error) {
-	pi.Log.Infof("rtplugs approveResponse rt.roundTripPlugs %v", rt.roundTripPlugs)
-
 	resp = respIn
 	for _, p := range rt.roundTripPlugs {
 		start := time.Now()
@@ -72,7 +68,7 @@ func (rt *RoundTrip) approveResponse(req *http.Request, respIn *http.Response) (
 			resp = nil
 			return
 		}
-		pi.Log.Infof("rtplugs Plug %s: ApproveResponse took %s", p.PlugName(), elapsed.String())
+		pi.Log.Debugf("rtplugs Plug %s: ApproveResponse took %s", p.PlugName(), elapsed.String())
 	}
 	return
 }
@@ -85,7 +81,6 @@ func (rt *RoundTrip) RoundTrip(req *http.Request) (resp *http.Response, err erro
 			resp = nil
 		}
 	}()
-	pi.Log.Infof("(rt *RoundTrip) RoundTrip\n")
 
 	if req, err = rt.approveRequests(req); err == nil {
 		if resp, err = rt.nextRoundTrip(req); err == nil {
@@ -144,7 +139,6 @@ func NewPlugs(pluglist string, l pi.Logger) (rt *RoundTrip) {
 			}
 		}
 	}
-	pi.Log.Infof("rtplugs rt.roundTripPlugs %v\n", rt.roundTripPlugs)
 	return
 }
 
