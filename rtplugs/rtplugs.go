@@ -35,11 +35,11 @@ func (rt *RoundTrip) approveRequests(reqin *http.Request) (req *http.Request, er
 		req, err = p.ApproveRequest(req)
 		elapsed := time.Since(start)
 		if err != nil {
-			pi.Log.Debugf("rtplugs Plug %s: ApproveRequest returned an error %v", p.PlugName(), err)
+			pi.Log.Infof("rtplugs Plug %s: ApproveRequest returned an error %v", p.PlugName(), err)
 			req = nil
 			return
 		}
-		pi.Log.Debugf("rtplugs Plug %s: ApproveRequest took %s", p.PlugName(), elapsed.String())
+		pi.Log.Infof("rtplugs Plug %s: ApproveRequest took %s", p.PlugName(), elapsed.String())
 	}
 	return
 }
@@ -49,11 +49,11 @@ func (rt *RoundTrip) nextRoundTrip(req *http.Request) (resp *http.Response, err 
 	resp, err = rt.next.RoundTrip(req)
 	elapsed := time.Since(start)
 	if err != nil {
-		pi.Log.Debugf("rtplugs nextRoundTrip (i.e. DefaultTransport) returned an error %v", err)
+		pi.Log.Infof("rtplugs nextRoundTrip (i.e. DefaultTransport) returned an error %v", err)
 		resp = nil
 		return
 	}
-	pi.Log.Debugf("rtplugs nextRoundTrip (i.e. DefaultTransport) took %s\n", elapsed.String())
+	pi.Log.Infof("rtplugs nextRoundTrip (i.e. DefaultTransport) took %s\n", elapsed.String())
 	return
 }
 
@@ -64,11 +64,11 @@ func (rt *RoundTrip) approveResponse(req *http.Request, respIn *http.Response) (
 		resp, err = p.ApproveResponse(req, resp)
 		elapsed := time.Since(start)
 		if err != nil {
-			pi.Log.Debugf("rtplugs Plug %s: ApproveResponse returned an error %v", p.PlugName(), err)
+			pi.Log.Infof("rtplugs Plug %s: ApproveResponse returned an error %v", p.PlugName(), err)
 			resp = nil
 			return
 		}
-		pi.Log.Debugf("rtplugs Plug %s: ApproveResponse took %s", p.PlugName(), elapsed.String())
+		pi.Log.Infof("rtplugs Plug %s: ApproveResponse took %s", p.PlugName(), elapsed.String())
 	}
 	return
 }
