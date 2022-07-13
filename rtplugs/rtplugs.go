@@ -147,7 +147,6 @@ func NewPlugs(pluglist string, l pi.Logger) (rt *RoundTrip) {
 // Once the existing RoundTripper is wrapped, data flowing to and from the
 // existing RoundTripper will be screened using the security plugs
 func (rt *RoundTrip) Transport(t http.RoundTripper) http.RoundTripper {
-	pi.Log.Infof("(rt *RoundTrip) Transport\n")
 	if t == nil {
 		pi.Log.Infof("(rt *RoundTrip) received a nil transport\n")
 		t = http.DefaultTransport
