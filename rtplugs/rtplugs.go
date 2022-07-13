@@ -30,6 +30,8 @@ type RoundTrip struct {
 
 func (rt *RoundTrip) approveRequests(reqin *http.Request) (req *http.Request, err error) {
 	req = reqin
+	pi.Log.Infof("rtplugs approveRequests rt.roundTripPlugs %v", rt.roundTripPlugs)
+
 	for _, p := range rt.roundTripPlugs {
 		start := time.Now()
 		req, err = p.ApproveRequest(req)
@@ -58,6 +60,8 @@ func (rt *RoundTrip) nextRoundTrip(req *http.Request) (resp *http.Response, err 
 }
 
 func (rt *RoundTrip) approveResponse(req *http.Request, respIn *http.Response) (resp *http.Response, err error) {
+	pi.Log.Infof("rtplugs approveResponse rt.roundTripPlugs %v", rt.roundTripPlugs)
+
 	resp = respIn
 	for _, p := range rt.roundTripPlugs {
 		start := time.Now()
@@ -81,6 +85,7 @@ func (rt *RoundTrip) RoundTrip(req *http.Request) (resp *http.Response, err erro
 			resp = nil
 		}
 	}()
+	pi.Log.Infof("(rt *RoundTrip) RoundTrip\n")
 
 	if req, err = rt.approveRequests(req); err == nil {
 		if resp, err = rt.nextRoundTrip(req); err == nil {
@@ -139,6 +144,7 @@ func NewPlugs(pluglist string, l pi.Logger) (rt *RoundTrip) {
 			}
 		}
 	}
+	pi.Log.Infof("rtplugs rt.roundTripPlugs %v\n", rt.roundTripPlugs)
 	return
 }
 
@@ -147,7 +153,9 @@ func NewPlugs(pluglist string, l pi.Logger) (rt *RoundTrip) {
 // Once the existing RoundTripper is wrapped, data flowing to and from the
 // existing RoundTripper will be screened using the security plugs
 func (rt *RoundTrip) Transport(t http.RoundTripper) http.RoundTripper {
+	pi.Log.Infof("(rt *RoundTrip) Transport\n")
 	if t == nil {
+		pi.Log.Infof("(rt *RoundTrip) received a nil transport\n")
 		t = http.DefaultTransport
 	}
 	rt.next = t
