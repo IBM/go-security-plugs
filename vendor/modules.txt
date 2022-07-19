@@ -272,8 +272,7 @@ k8s.io/api/apps/v1
 k8s.io/api/authentication/v1
 k8s.io/api/batch/v1
 k8s.io/api/core/v1
-# k8s.io/apimachinery v0.24.3
-## explicit
+# k8s.io/apimachinery v0.23.8
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta
@@ -338,10 +337,9 @@ k8s.io/client-go/util/connrotation
 k8s.io/client-go/util/flowcontrol
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/workqueue
-# k8s.io/klog/v2 v2.60.1
+# k8s.io/klog/v2 v2.60.1-0.20220317184644-43cc75f9ae89
 k8s.io/klog/v2
 k8s.io/klog/v2/internal/buffer
-k8s.io/klog/v2/internal/clock
 k8s.io/klog/v2/internal/serialize
 k8s.io/klog/v2/internal/severity
 # k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
@@ -353,7 +351,6 @@ k8s.io/utils/internal/third_party/forked/golang/golang-lru
 k8s.io/utils/internal/third_party/forked/golang/net
 k8s.io/utils/lru
 k8s.io/utils/net
-k8s.io/utils/strings/slices
 k8s.io/utils/trace
 # knative.dev/control-protocol v0.0.0-20220705161107-827b25dce9b8
 knative.dev/control-protocol/pkg/certificates
