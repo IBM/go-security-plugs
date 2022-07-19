@@ -391,7 +391,7 @@ knative.dev/pkg/tracing/propagation
 knative.dev/pkg/tracing/propagation/tracecontextb3
 knative.dev/pkg/tracker
 knative.dev/pkg/websocket
-# knative.dev/serving v0.0.0-00010101000000-000000000000 => ../../davidhadas/serving
+# knative.dev/serving v0.33.1-0.20220718185459-017b9d0393dd
 ## explicit
 knative.dev/serving/pkg/activator
 knative.dev/serving/pkg/apis/autoscaling
@@ -421,4 +421,3 @@ sigs.k8s.io/structured-merge-diff/v4/value
 sigs.k8s.io/yaml
 # github.com/IBM/go-security-plugs/plugs/rtgate => ./plugs/rtgate
 # github.com/IBM/go-security-plugs/pluginterfaces => ./pluginterfaces
-# knative.dev/serving => ../../davidhadas/serving

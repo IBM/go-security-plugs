@@ -1,0 +1,19 @@
+package main
+
+import (
+	"os"
+
+	"github.com/IBM/go-security-plugs/qpsecurity"
+	"knative.dev/serving/pkg/queue/sharedmain"
+
+	_ "github.com/IBM/go-security-plugs/plugs/testgate" // add feature
+)
+
+func main() {
+	os.Setenv("RTPLUGS", "testgate") // activate feature
+
+	qOpt := qpsecurity.NewQPSecurityPlugs()
+	defer qOpt.Shutdown()
+
+	sharedmain.Main(qOpt.QPTransport)
+}
