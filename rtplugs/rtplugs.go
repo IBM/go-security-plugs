@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -77,6 +78,7 @@ func (rt *RoundTrip) RoundTrip(req *http.Request) (resp *http.Response, err erro
 	defer func() {
 		if recovered := recover(); recovered != nil {
 			pi.Log.Warnf("rtplus Recovered from panic during RoundTrip! Recover: %v\n", recovered)
+			pi.Log.Infof("rtplus stacktrace from panic: \n %s\n" + string(debug.Stack()))
 			err = errors.New("paniced during RoundTrip")
 			resp = nil
 		}

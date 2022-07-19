@@ -10,6 +10,7 @@ import (
 	_ "github.com/IBM/go-security-plugs/plugs/testgate"
 	"github.com/IBM/go-security-plugs/qpsecurity"
 	"go.uber.org/zap"
+	"knative.dev/serving/pkg/queue/sharedmain"
 )
 
 // Eample of a Reverse Proxy using plugs
@@ -34,10 +35,15 @@ func main() {
 	//	defer rt.Close()
 	//	proxy.Transport = rt.Transport(proxy.Transport)
 	//}
-	qp := qpsecurity.SecurityExtensions
-	qp.Init(log, context.Background())
+	qp := qpsecurity.NewQPSecurityPlugs()
+	d := new(sharedmain.Defaults)
+	d.Ctx = context.Background()
+	d.Logger = log
+	d.Transport = proxy.Transport
+
+	qp.Setup(d)
 	defer qp.Shutdown()
-	proxy.Transport = qp.Transport(proxy.Transport)
+	proxy.Transport = d.Transport
 	log.Infof("Transport ready")
 
 	http.Handle("/", h)

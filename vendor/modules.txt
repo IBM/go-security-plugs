@@ -422,3 +422,4 @@ sigs.k8s.io/yaml
 # github.com/IBM/go-security-plugs/plugs/rtgate => ./plugs/rtgate
 # github.com/IBM/go-security-plugs/pluginterfaces => ./pluginterfaces
 # knative.dev/serving => ../../davidhadas/serving
+# github.com/IBM/workload-security-guard => ../workload-security-guard
