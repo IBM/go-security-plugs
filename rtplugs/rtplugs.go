@@ -110,6 +110,21 @@ func NewPlugs(pluglist string, l pi.Logger) (rt *RoundTrip) {
 		return
 	}
 
+	comma := func(c rune) bool {
+		return c == ','
+	}
+	plugs := strings.FieldsFunc(pluglist, comma)
+
+	//plugs := strings.Split(pluglist, ",")
+	return NewConfigrablePlugs(plugs, nil, l)
+}
+
+func NewConfigrablePlugs(plugs []string, c map[string]map[string]string, l pi.Logger) (rt *RoundTrip) {
+	//skip for an empty pluglist
+	if len(plugs) == 0 {
+		return
+	}
+
 	// Set logger for the entire RTPLUGS mechanism
 	if l != nil {
 		pi.Log = l
@@ -124,14 +139,19 @@ func NewPlugs(pluglist string, l pi.Logger) (rt *RoundTrip) {
 			rt = nil
 		}
 	}()
-
-	plugs := strings.Split(pluglist, ",")
+	pi.Log.Infof("rtplugs configs %v", c)
 
 	for _, plugName := range plugs {
 		for _, p := range pi.RoundTripPlugs {
 			if p.PlugName() == plugName {
+
+				var plugConfig map[string]string
+				if c != nil {
+					plugConfig = c[plugName]
+					pi.Log.Infof("rtplugs Plugin %s has config %v", plugName, plugConfig)
+				}
 				// found a loaded plug, lets activate it
-				p.Init()
+				p.Init(plugConfig)
 				if rt == nil {
 					rt = new(RoundTrip)
 				}

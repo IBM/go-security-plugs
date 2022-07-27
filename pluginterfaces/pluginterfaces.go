@@ -25,7 +25,7 @@ var Log Logger
 //		func NewPlug()  RoundTripPlug {}
 //
 type RoundTripPlug interface {
-	Init()
+	Init(c map[string]string)
 	Shutdown()
 	PlugName() string
 	PlugVersion() string

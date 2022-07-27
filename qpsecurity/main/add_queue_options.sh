@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# RTPLUGS_PKG should include a comma seperated list of go packages
+# RTPLUGS_PKG should include a comma separated list of go packages
 # Each package should implement a plug of github.com/IBM/go-security-plugs/rtplugs
 # All packages will be staticaly loaded to queue proxry
 #

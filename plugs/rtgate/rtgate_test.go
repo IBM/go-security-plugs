@@ -25,7 +25,7 @@ func testinit() *plug {
 	p.version = version
 	p.name = name
 	pi.RegisterPlug(p)
-	p.Init()
+	p.Init(nil)
 	return p
 }
 

@@ -16,9 +16,9 @@ const name string = "rtgate"
 type plug struct {
 	name    string
 	version string
+	config  map[string]string
 
 	// Add here any other state the extension needs
-	config map[string]string
 }
 
 func (p *plug) PlugName() string {
@@ -107,7 +107,8 @@ func (p *plug) Shutdown() {
 	}
 }
 
-func (p *plug) Init() {
+func (p *plug) Init(c map[string]string) {
+	p.config = c
 	pi.Log.Infof("plug %s: Initializing - version %v", p.name, p.version)
 	pi.Log.Infof("plug %s: Never use in production", p.name)
 	p.config = make(map[string]string)
