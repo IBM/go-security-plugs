@@ -8,10 +8,11 @@ import "knative.dev/serving/pkg/queue/sharedmain"
 
 import _ "github.com/IBM/go-security-plugs/plugs/testgate"
 func main() {
-    os.Setenv("RTPLUGS", "testgate")
-
     qOpt := qpsecurity.NewQPSecurityPlugs()
     defer qOpt.Shutdown()
-
-    sharedmain.Main(qOpt.Setup)
+    
+    if sharedmain.Main(qOpt.Setup) != nil {
+      qOpt.Shutdown()
+      os.Exit(1)
+    }
 }

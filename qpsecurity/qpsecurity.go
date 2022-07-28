@@ -22,9 +22,9 @@ func NewQPSecurityPlugs() *QPSecurityPlugs {
 
 func (p *QPSecurityPlugs) ProcessAnnotations() {
 	p.defaults.Logger.Infof("QPSecurityPlugs ProcessAnnotations started")
-	file, err := os.Open("/podinfo/annotations")
+	file, err := os.Open("/etc/podinfo/annotations")
 	if err != nil {
-		p.defaults.Logger.Infof("QPSecurityPlugs failed to open /podinfo/annotations. Check if podInfo is enabled for this service. os.Open Error %s", err.Error())
+		p.defaults.Logger.Infof("QPSecurityPlugs failed to open /etc/podinfo/annotations. Check if podInfo is enabled for this service. os.Open Error %s", err.Error())
 		return
 	}
 	defer file.Close()
