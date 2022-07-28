@@ -76,12 +76,13 @@ echo "Active plugs: ${RTPLUGS_NAMES}"
 
 cat <<EOT >> main.go
 func main() {
-    os.Setenv("RTPLUGS", "${RTPLUGS_NAMES}")
-
     qOpt := qpsecurity.NewQPSecurityPlugs()
     defer qOpt.Shutdown()
-
-    sharedmain.Main(qOpt.Setup)
+    
+    if sharedmain.Main(qOpt.Setup) != nil {
+      qOpt.Shutdown()
+      os.Exit(1)
+    }
 }
 EOT
 echo "--------------- resulting main.go -----------"
