@@ -1,6 +1,6 @@
 module github.com/IBM/go-security-plugs
 
-go 1.18
+go 1.17
 
 require (
 	go.uber.org/zap v1.19.1
