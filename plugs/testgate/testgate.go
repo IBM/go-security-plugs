@@ -1,6 +1,7 @@
 package testgate
 
 import (
+	"context"
 	"net/http"
 
 	pi "github.com/IBM/go-security-plugs/pluginterfaces"
@@ -44,6 +45,10 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 
 func (p *plug) Shutdown() {
 	pi.Log.Infof("%s: Shutdown", p.name)
+}
+
+func (p *plug) Start(ctx context.Context) context.Context {
+	return ctx
 }
 
 func (p *plug) Init(c map[string]string) {

@@ -2,6 +2,7 @@
 package pluginterfaces
 
 import (
+	"context"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -18,6 +19,8 @@ type Logger interface {
 
 // The logger for the rtplugs and all connected plugs
 var Log Logger
+var Svcname string
+var Namespace string
 
 // A plugin based on the newer RoundTripPlug supports offers this interface
 //
@@ -26,6 +29,7 @@ var Log Logger
 //
 type RoundTripPlug interface {
 	Init(c map[string]string)
+	Start(context.Context) context.Context
 	Shutdown()
 	PlugName() string
 	PlugVersion() string

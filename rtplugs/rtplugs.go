@@ -3,6 +3,7 @@
 package rtplugs
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"os"
@@ -97,15 +98,8 @@ func (rt *RoundTrip) RoundTrip(req *http.Request) (resp *http.Response, err erro
 // env RTPLUGS defines a comma seperated list of plug names
 // A typical RTPLUGS value would be "rtplug,wsplug"
 // The plugs may be added statically (using imports) or dynmaicaly (.so files)
-func New(l pi.Logger) (rt *RoundTrip) {
+func New(logger pi.Logger) (rt *RoundTrip) {
 	pluglist := os.Getenv("RTPLUGS")
-	return NewPlugs(pluglist, l)
-}
-
-// NewPlugs(pluglist, pi.Logger) will attempt to strat a list of plugs
-// Use NewPlus rather than New when the list of plugs is managed by the caller
-func NewPlugs(pluglist string, l pi.Logger) (rt *RoundTrip) {
-	// Immidiatly return nil if pluglist is not set
 	if pluglist == "" {
 		return
 	}
@@ -115,20 +109,43 @@ func NewPlugs(pluglist string, l pi.Logger) (rt *RoundTrip) {
 	}
 	plugs := strings.FieldsFunc(pluglist, comma)
 
-	//plugs := strings.Split(pluglist, ",")
-	return NewConfigrablePlugs(plugs, nil, l)
+	namespace := os.Getenv("NAMESPACE")
+	if namespace == "" {
+		dat, err := os.ReadFile("/etc/podinfo/namespace")
+		if err == nil {
+			namespace = string(dat)
+		}
+	}
+	svcname := os.Getenv("SERVICENAME")
+	if svcname == "" {
+		dat, err := os.ReadFile("/etc/podinfo/servicename")
+		if err == nil {
+			svcname = string(dat)
+		}
+	}
+
+	if namespace == "" || svcname == "" {
+		// mandatory
+		panic("Can't find mandatory parameter namespace")
+	}
+
+	return NewConfigrablePlugs(context.Background(), logger, svcname, namespace, plugs, nil)
 }
 
-func NewConfigrablePlugs(plugs []string, c map[string]map[string]string, l pi.Logger) (rt *RoundTrip) {
+// NewConfigrablePlugs(name, namespace, plugs, config, logger)
+// Start `plugs` configured by `config`, to protect service `name` in `namespace`
+func NewConfigrablePlugs(ctx context.Context, logger pi.Logger, svcname string, namespace string, plugs []string, c map[string]map[string]string) (rt *RoundTrip) {
 	//skip for an empty pluglist
 	if len(plugs) == 0 {
 		return
 	}
 
 	// Set logger for the entire RTPLUGS mechanism
-	if l != nil {
-		pi.Log = l
+	if logger != nil {
+		pi.Log = logger
 	}
+	pi.Svcname = svcname
+	pi.Namespace = namespace
 
 	// Never panic the caller app from here
 	defer func() {
@@ -148,7 +165,7 @@ func NewConfigrablePlugs(plugs []string, c map[string]map[string]string, l pi.Lo
 				var plugConfig map[string]string
 				if c != nil {
 					plugConfig = c[plugName]
-					pi.Log.Infof("rtplugs Plugin %s has config %v", plugName, plugConfig)
+					pi.Log.Debugf("rtplugs Plugin %s has config %v", plugName, plugConfig)
 				}
 				// found a loaded plug, lets activate it
 				p.Init(plugConfig)
@@ -156,7 +173,7 @@ func NewConfigrablePlugs(plugs []string, c map[string]map[string]string, l pi.Lo
 					rt = new(RoundTrip)
 				}
 				rt.roundTripPlugs = append(rt.roundTripPlugs, p)
-				pi.Log.Infof("rtplugs Plugin %s is activated", plugName)
+				pi.Log.Infof("Plugin %s is activated", plugName)
 				break
 			}
 		}
@@ -170,11 +187,27 @@ func NewConfigrablePlugs(plugs []string, c map[string]map[string]string, l pi.Lo
 // existing RoundTripper will be screened using the security plugs
 func (rt *RoundTrip) Transport(t http.RoundTripper) http.RoundTripper {
 	if t == nil {
-		pi.Log.Infof("(rt *RoundTrip) received a nil transport\n")
+		pi.Log.Infof("Transport received a nil transport\n")
 		t = http.DefaultTransport
 	}
 	rt.next = t
 	return rt
+}
+
+// Context() wraps an existing RoundTripper
+//
+// Once the existing RoundTripper is wrapped, data flowing to and from the
+// existing RoundTripper will be screened using the security plugs
+func (rt *RoundTrip) Start(ctxin context.Context) (ctx context.Context) {
+	ctx = ctxin
+	if ctx == nil {
+		pi.Log.Debugf("Context received a nil context\n")
+		ctx = context.Background()
+	}
+	for _, p := range rt.roundTripPlugs {
+		ctx = p.Start(ctx)
+	}
+	return
 }
 
 // Close() gracefully shuts down all plugs

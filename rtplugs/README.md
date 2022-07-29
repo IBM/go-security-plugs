@@ -15,11 +15,15 @@ if rt != nil {
 The names of plugs that will be activated is taken from the `RTPLUGS` environment variable. 
 Use a comma seperated list for activating more than one plug.
 
-When the caller manages the list of plugs (e.g. using its own config files)
-use NewPlugs() instead of New().
-When using NewPlugs, the caller specify the plug list using the pluglist parameter and the env RTPLUGS is ignored.
+The namespace used is taken from the `NAMESPACE` environment variable or the `/etc/podinfo/namespace` file (via downwards api). 
+
+The servicename used is taken from the `SERVICENAME` environment variable or the `/etc/podinfo/servicename` file (via downwards api).
+
+When the caller manages the list of plugs and their configuration (e.g. using its own config files)
+use NewConfigrablePlugs() instead of New().
+When using NewConfigrablePlugs, the caller specify the name and namespace of the service, and also the plug list and its configuration
 ```
-rt := rtplugs.NewPlugs(pluglist, log)  
+rt := rtplugs.NewConfigrablePlugs(servicename, namespace, pluglist, config, log)  
 if rt != nil {  
     // We have at least one activated plug
     defer rt.Close()
@@ -27,7 +31,9 @@ if rt != nil {
 }
 ```  
 
-Use `rt.Close()` to gracefully shutdown the work of plugs
+Use `rt.Close()` to gracefully shutdown the work of plugs. 
+Graceful shutdown ensure no loss of data in plugs. 
+
 
 ## Optional alignment of logging facility and orderly shutdown
 

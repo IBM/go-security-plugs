@@ -34,7 +34,6 @@ type Iofilter struct {
 // and deliver the data to the Readwer using an internal channel
 func New(src io.ReadCloser, filter func(buf []byte, state interface{}), state interface{}, params ...uint) (iof *Iofilter) {
 	var numBufs, sizeBuf uint
-	fmt.Printf("params: %v\n", params)
 	switch len(params) {
 	case 0:
 		numBufs = 3
@@ -180,9 +179,7 @@ func (iof *Iofilter) readFromSrc() (n int, err error) {
 			err = io.EOF
 		}
 	}()
-	fmt.Printf("(iof *Iofilter) Gorutine readFromSrc Reading...\n")
 	n, err = iof.src.Read(iof.inBuf)
-	fmt.Printf("(iof *Iofilter) Gorutine readFromSrc returning %d err %v\n", n, err)
 	return n, err
 }
 

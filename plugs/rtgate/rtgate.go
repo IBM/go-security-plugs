@@ -107,6 +107,10 @@ func (p *plug) Shutdown() {
 	}
 }
 
+func (p *plug) Start(ctx context.Context) context.Context {
+	return ctx
+}
+
 func (p *plug) Init(c map[string]string) {
 	p.config = c
 	pi.Log.Infof("plug %s: Initializing - version %v", p.name, p.version)

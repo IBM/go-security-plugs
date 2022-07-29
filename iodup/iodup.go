@@ -35,7 +35,6 @@ type Iodup struct {
 // and deliver the data to the Readwer using an internal channel
 func New(src io.ReadCloser, params ...uint) (iod *Iodup) {
 	var numOutputs, numBufs, sizeBuf uint
-	fmt.Printf("params: %v\n", params)
 	switch len(params) {
 	case 0:
 		numOutputs = 2

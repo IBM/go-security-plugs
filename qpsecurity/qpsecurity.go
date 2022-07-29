@@ -21,10 +21,9 @@ func NewQPSecurityPlugs() *QPSecurityPlugs {
 }
 
 func (p *QPSecurityPlugs) ProcessAnnotations() {
-	p.defaults.Logger.Infof("QPSecurityPlugs ProcessAnnotations started")
 	file, err := os.Open("/etc/podinfo/annotations")
 	if err != nil {
-		p.defaults.Logger.Infof("QPSecurityPlugs failed to open /etc/podinfo/annotations. Check if podInfo is enabled for this service. os.Open Error %s", err.Error())
+		p.defaults.Logger.Infof("Failed to open /etc/podinfo/annotations. Check if podInfo is mounted. os.Open Error %s", err.Error())
 		return
 	}
 	defer file.Close()
@@ -35,6 +34,7 @@ func (p *QPSecurityPlugs) ProcessAnnotations() {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		txt := scanner.Text()
+		txt = strings.ToLower(txt)
 		parts := strings.Split(txt, "=")
 
 		k := parts[0]
@@ -66,22 +66,28 @@ func (p *QPSecurityPlugs) ProcessAnnotations() {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		p.defaults.Logger.Infof("QPSecurityPlugs scanner Error %s", err.Error())
+		p.defaults.Logger.Infof("Scanner Error %s", err.Error())
 		return
 	}
-	p.defaults.Logger.Infof("QPSecurityPlugs activated plugs: %v", p.plugs)
-	p.defaults.Logger.Infof("QPSecurityPlugs config plugs: %v", p.config)
+	p.defaults.Logger.Debugf("Plug: %v was activated with config %v", p.plugs, p.config)
 }
 
 func (p *QPSecurityPlugs) Setup(defaults *sharedmain.Defaults) {
 	p.defaults = defaults
-	p.defaults.Logger.Infof("QPSecurityPlugs Setup started")
+	servicename := defaults.Env.ServingService
+	if servicename == "" {
+		servicename = defaults.Env.ServingConfiguration
+	}
+
+	// build p.config
 	p.ProcessAnnotations()
-	p.rt = rtplugs.NewConfigrablePlugs(p.plugs, p.config, defaults.Logger) // add qOpts.Context
+
+	p.rt = rtplugs.NewConfigrablePlugs(defaults.Ctx, defaults.Logger, servicename, defaults.Env.ServingNamespace, p.plugs, p.config) // add qOpts.Context
 	if p.rt != nil {
+		defaults.Ctx = p.rt.Start(defaults.Ctx)
 		defaults.Transport = p.rt.Transport(defaults.Transport)
 	} else {
-		defaults.Logger.Infof("Setup no active plugs found...")
+		defaults.Logger.Infof("No plugs were activated")
 	}
 }
 
