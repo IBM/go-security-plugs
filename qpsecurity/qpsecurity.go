@@ -82,9 +82,8 @@ func (p *QPSecurityPlugs) Setup(defaults *sharedmain.Defaults) {
 	// build p.config
 	p.ProcessAnnotations()
 
-	p.rt = rtplugs.NewConfigrablePlugs(defaults.Ctx, defaults.Logger, servicename, defaults.Env.ServingNamespace, p.plugs, p.config) // add qOpts.Context
+	defaults.Ctx, p.rt = rtplugs.NewConfigrablePlugs(defaults.Ctx, defaults.Logger, servicename, defaults.Env.ServingNamespace, p.plugs, p.config) // add qOpts.Context
 	if p.rt != nil {
-		defaults.Ctx = p.rt.Start(defaults.Ctx)
 		defaults.Transport = p.rt.Transport(defaults.Transport)
 	} else {
 		defaults.Logger.Infof("No plugs were activated")

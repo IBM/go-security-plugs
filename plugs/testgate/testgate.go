@@ -31,7 +31,7 @@ func (p *plug) PlugVersion() string {
 
 func (p *plug) ApproveRequest(req *http.Request) (*http.Request, error) {
 	if _, ok := req.Header["X-Testgate-Hi"]; ok {
-		pi.Log.Infof("%s: hehe, %s noticed me!", p.name, p.sender)
+		pi.Log.Infof("Plug %s: hehe, %s noticed me!", p.name, p.sender)
 	}
 	return req, nil
 }
@@ -44,31 +44,30 @@ func (p *plug) ApproveResponse(req *http.Request, resp *http.Response) (*http.Re
 }
 
 func (p *plug) Shutdown() {
-	pi.Log.Infof("%s: Shutdown", p.name)
+	pi.Log.Infof("Plug %s: Shutdown", p.name)
 }
 
 func (p *plug) Start(ctx context.Context) context.Context {
 	return ctx
 }
 
-func (p *plug) Init(c map[string]string) {
+func (p *plug) Init(ctx context.Context, c map[string]string, serviceName string, namespace string, logger pi.Logger) context.Context {
 	p.config = c
 
-	pi.Log.Infof("plug %s: Initializing - version %v", p.name, p.version)
-	pi.Log.Infof("plug %s: Never use in production", p.name)
-	pi.Log.Infof("plug %s: has config %v", p.name, p.config)
+	pi.Log.Infof("Plug %s: Never use in production", p.name)
 	p.answer = "CU"
 	p.sender = "someone"
 	if p.config != nil {
 		if v, ok := p.config["sender"]; ok {
 			p.sender = v
-			pi.Log.Infof("plug %s: found sender %s", p.name, p.sender)
+			pi.Log.Debugf("Plug %s: found sender %s", p.name, p.sender)
 		}
 		if v, ok := p.config["response"]; ok {
 			p.answer = v
-			pi.Log.Infof("plug %s: found answer %s", p.name, p.answer)
+			pi.Log.Debugf("Plug %s: found answer %s", p.name, p.answer)
 		}
 	}
+	return ctx
 }
 
 func init() {

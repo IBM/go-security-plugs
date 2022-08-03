@@ -129,12 +129,18 @@ func New(logger pi.Logger) (rt *RoundTrip) {
 		panic("Can't find mandatory parameter namespace")
 	}
 
-	return NewConfigrablePlugs(context.Background(), logger, svcname, namespace, plugs, nil)
+	_, rt = NewConfigrablePlugs(context.Background(), logger, svcname, namespace, plugs, nil)
+	return rt
 }
 
 // NewConfigrablePlugs(name, namespace, plugs, config, logger)
 // Start `plugs` configured by `config`, to protect service `name` in `namespace`
-func NewConfigrablePlugs(ctx context.Context, logger pi.Logger, svcname string, namespace string, plugs []string, c map[string]map[string]string) (rt *RoundTrip) {
+
+// Context() wraps an existing RoundTripper
+//
+// Once the existing RoundTripper is wrapped, data flowing to and from the
+// existing RoundTripper will be screened using the security plugs
+func NewConfigrablePlugs(ctxin context.Context, logger pi.Logger, svcname string, namespace string, plugs []string, c map[string]map[string]string) (ctxout context.Context, rt *RoundTrip) {
 	//skip for an empty pluglist
 	if len(plugs) == 0 {
 		return
@@ -144,8 +150,6 @@ func NewConfigrablePlugs(ctx context.Context, logger pi.Logger, svcname string, 
 	if logger != nil {
 		pi.Log = logger
 	}
-	pi.Svcname = svcname
-	pi.Namespace = namespace
 
 	// Never panic the caller app from here
 	defer func() {
@@ -156,27 +160,34 @@ func NewConfigrablePlugs(ctx context.Context, logger pi.Logger, svcname string, 
 			rt = nil
 		}
 	}()
-	pi.Log.Infof("rtplugs configs %v", c)
 
+	ctxout = ctxin
 	for _, plugName := range plugs {
+		var foundPlug bool
 		for _, p := range pi.RoundTripPlugs {
 			if p.PlugName() == plugName {
-
+				foundPlug = true
 				var plugConfig map[string]string
 				if c != nil {
 					plugConfig = c[plugName]
-					pi.Log.Debugf("rtplugs Plugin %s has config %v", plugName, plugConfig)
 				}
 				// found a loaded plug, lets activate it
-				p.Init(plugConfig)
+				pi.Log.Infof("Activating Plug %s with config %v", plugName, plugConfig)
+				ctxout = p.Init(ctxout, plugConfig, svcname, namespace, logger)
 				if rt == nil {
 					rt = new(RoundTrip)
 				}
 				rt.roundTripPlugs = append(rt.roundTripPlugs, p)
-				pi.Log.Infof("Plugin %s is activated", plugName)
 				break
 			}
 		}
+		if !foundPlug {
+			pi.Log.Infof("Plug %s is not supported by this image. Consult your IT", plugName)
+		}
+
+	}
+	for _, p := range rt.roundTripPlugs {
+		pi.Log.Debugf("Plug %s version %s is active for service %s namespace %s", p.PlugName(), p.PlugVersion(), svcname, namespace)
 	}
 	return
 }
@@ -187,27 +198,11 @@ func NewConfigrablePlugs(ctx context.Context, logger pi.Logger, svcname string, 
 // existing RoundTripper will be screened using the security plugs
 func (rt *RoundTrip) Transport(t http.RoundTripper) http.RoundTripper {
 	if t == nil {
-		pi.Log.Infof("Transport received a nil transport\n")
+		pi.Log.Debugf("Transport received a nil transport\n")
 		t = http.DefaultTransport
 	}
 	rt.next = t
 	return rt
-}
-
-// Context() wraps an existing RoundTripper
-//
-// Once the existing RoundTripper is wrapped, data flowing to and from the
-// existing RoundTripper will be screened using the security plugs
-func (rt *RoundTrip) Start(ctxin context.Context) (ctx context.Context) {
-	ctx = ctxin
-	if ctx == nil {
-		pi.Log.Debugf("Context received a nil context\n")
-		ctx = context.Background()
-	}
-	for _, p := range rt.roundTripPlugs {
-		ctx = p.Start(ctx)
-	}
-	return
 }
 
 // Close() gracefully shuts down all plugs

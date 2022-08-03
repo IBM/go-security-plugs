@@ -111,9 +111,8 @@ func (p *plug) Start(ctx context.Context) context.Context {
 	return ctx
 }
 
-func (p *plug) Init(c map[string]string) {
+func (p *plug) Init(ctx context.Context, c map[string]string, serviceName string, namespace string, logger pi.Logger) context.Context {
 	p.config = c
-	pi.Log.Infof("plug %s: Initializing - version %v", p.name, p.version)
 	pi.Log.Infof("plug %s: Never use in production", p.name)
 	p.config = make(map[string]string)
 	p.config["panicInitialize"] = os.Getenv("RT_GATE_PANIC_INIT")
@@ -126,6 +125,7 @@ func (p *plug) Init(c map[string]string) {
 	if p.config["panicInitialize"] == "true" {
 		panic("it is fun to panic everywhere! also in Initialize")
 	}
+	return ctx
 }
 
 func init() {

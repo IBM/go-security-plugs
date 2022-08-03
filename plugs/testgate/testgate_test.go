@@ -1,6 +1,7 @@
 package testgate
 
 import (
+	"context"
 	"fmt"
 	"net/http/httptest"
 	"os"
@@ -25,7 +26,7 @@ func testinit() *plug {
 	p.version = version
 	p.name = name
 	pi.RegisterPlug(p)
-	p.Init(nil)
+	p.Init(context.Background(), nil, "svcName", "myns", defaultLog)
 	return p
 }
 
