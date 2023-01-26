@@ -16,7 +16,7 @@ type Out struct {
 
 type Iodup struct {
 	inBuf      []byte
-	Output     []Out
+	Output     []*Out
 	bufs       [][]byte
 	inBufIndex uint
 	numBufs    uint
@@ -27,11 +27,11 @@ type Iodup struct {
 
 // Create a New iodup to wrap an existing provider of an io.ReadCloser interface
 // The new iodup.out[] will expose an io.ReadCloser interface
-// The optional params may include a two integer parameter indicating:
-// 1. The number of outputs (defualt is 2)
+// The optional params may include 3 optional integers as parameters:
+// 1. The number of outputs (default is 2)
 // 2. The number of buffers which may be at least 3 (default is 1024)
 // 3. The size of the buffers (default is 8192)
-// A goroutine will be initiatd to wait on the original provider Read interface
+// A goroutine will be initiated to wait on the original provider Read interface
 // and deliver the data to the Readwer using an internal channel
 func New(src io.ReadCloser, params ...uint) (iod *Iodup) {
 	var numOutputs, numBufs, sizeBuf uint
@@ -81,9 +81,16 @@ func New(src io.ReadCloser, params ...uint) (iod *Iodup) {
 	iod.src = src
 
 	// create s.numOutputs outputs
-	iod.Output = make([]Out, iod.numOutputs)
+	iod.Output = make([]*Out, iod.numOutputs)
+
+	if iod.src == nil {
+		// all readers are nil
+		return
+	}
+
 	for j := uint(0); j < iod.numOutputs; j++ {
 		// we will maintain a maximum of s.numBufs-2 in s.bufChan + one buffer in s.inBuf + one buffer s.outBuf
+		iod.Output[j] = new(Out)
 		iod.Output[j].bufChan = make(chan []byte, iod.numBufs-2)
 	}
 	iod.bufs = make([][]byte, iod.numBufs)
@@ -106,8 +113,7 @@ func New(src io.ReadCloser, params ...uint) (iod *Iodup) {
 				iod.inBufIndex = (iod.inBufIndex + 1) % iod.numBufs
 				iod.inBuf = iod.bufs[iod.inBufIndex]
 			} else { // no data
-				if err == nil { // no data and no err.... bad, bad writter!!
-					//fmt.Printf("(iof *iofilter) Gorutine read no bytes, err is nil!\n")
+				if err == nil { // no data and no err.... bad, bad writer!!
 					// hey, this io.Read interface is not doing as recommended!
 					// "Implementations of Read are discouraged from returning a zero byte count with a nil error"
 					// "Callers should treat a return of 0 and nil as indicating that nothing happened"
@@ -118,9 +124,7 @@ func New(src io.ReadCloser, params ...uint) (iod *Iodup) {
 		}
 
 		if err.Error() != "EOF" {
-			fmt.Printf("(iof *iofilter) Gorutine err %v\n", err)
-		} else {
-			//fmt.Printf("(iof *iofilter) reached EOF in reader!\n")
+			fmt.Printf("(iof *iodup) Gorutine err %v\n", err)
 		}
 
 		for j := uint(0); j < iod.numOutputs; j++ {
@@ -134,21 +138,13 @@ func New(src io.ReadCloser, params ...uint) (iod *Iodup) {
 func (iod *Iodup) forwardToOut(buf []byte) {
 	defer func() {
 		if recovered := recover(); recovered != nil {
-			fmt.Printf("(iof *iofilter) forwardToOut recovering from panic... %v\n", recovered)
+			fmt.Printf("(iof *iodup) forwardToOut recovering from panic... %v\n", recovered)
 		}
 
 		// we never close bufChan from the receiver side, so we should never panic here!
 		// closing the source is not a great idea...
-
-		// We close the internal channel to signal to Read() that we are done
-		//for j := uint(0); j < iof.numOutputs; j++ {
-		//	close(iof.out[j].bufChan)
-		//}
-
-		//iod.closeSrc()
 	}()
 
-	//fmt.Printf("(iod *Iodup) Gorutine forward %d bytes\n", len(buf))
 	for j := uint(0); j < iod.numOutputs; j++ {
 		iod.Output[j].bufChan <- buf
 	}
@@ -156,7 +152,7 @@ func (iod *Iodup) forwardToOut(buf []byte) {
 func (iod *Iodup) readFromSrc() (n int, err error) {
 	defer func() {
 		if recovered := recover(); recovered != nil {
-			fmt.Printf("(iof *iofilter) readFromSrc recovering from panic... %v\n", recovered)
+			fmt.Printf("(iof *iodup) readFromSrc recovering from panic... %v\n", recovered)
 
 			// We close the internal channel to signal from the src to readers that we are done
 			for j := uint(0); j < iod.numOutputs; j++ {
@@ -166,46 +162,33 @@ func (iod *Iodup) readFromSrc() (n int, err error) {
 			err = io.EOF
 		}
 	}()
-	//fmt.Printf("(iof *Iodup) Gorutine readFromSrc Reading...\n")
 	n, err = iod.src.Read(iod.inBuf)
-	//fmt.Printf("(iof *Iodup) Gorutine readFromSrc returning %d err %v\n", n, err)
-
 	return n, err
 }
 
-// The io.Read interface of the iofilter
+// The io.Read interface of the iodup
 func (out *Out) Read(dest []byte) (n int, err error) {
-	//fmt.Printf("(out *Out) Read while len(out.outBuf) is %d\n", len(out.outBuf))
 	var opened bool
 	err = nil
 	// Do we have bytes in our current buffer?
 	if len(out.outBuf) == 0 {
 		// Block until data arrives
 		if out.outBuf, opened = <-out.bufChan; !opened && out.outBuf == nil {
-			//fmt.Printf("(out *Out) Read out.outBuf %v opened %v \n", out.outBuf, opened)
-
 			err = io.EOF
 			n = 0
-			//fmt.Printf("(out *Out) Read Ended  - channel is closed! ending with io.EOF\n")
 			return
 		}
-		//fmt.Printf("(out *Out) Read with new buffer len(out.outBuf) is %d\n", len(out.outBuf))
 	}
 
 	n = copy(dest, out.outBuf)
 	// We copied n bytes, lets skip them for next time
 	out.outBuf = out.outBuf[n:]
-	//fmt.Printf("(out *Out) Read Ended after reading %d bytes\n", n)
 	return
 }
 
-// The io.Close interface of the iofilter
+// The io.Close interface of the iodup
 func (out *Out) Close() error {
 	// We ignore close from any of the readers - we close when the source closes
-
-	//fmt.Printf("(iof *iofilter) Close\n")
-	//close(out.bufChan)
-	//iof.closeSrc()
 	return nil
 }
 func (out *Out) closeChannel() {
@@ -214,7 +197,6 @@ func (out *Out) closeChannel() {
 			fmt.Printf("(out *Out) closeChannel recovering from panic... %v\n", recovered)
 		}
 	}()
-	//fmt.Printf("(out *Out) closeChannel ! \n")
 	close(out.bufChan)
 }
 
@@ -226,7 +208,7 @@ func (iof *Iodup) closeSrc() error {
 	// Yet there are those who whould panic if closing when already closed..
 	//defer func() {
 	//	if recovered := recover(); recovered != nil {
-	//		fmt.Printf("(iof *iofilter) recovering from panic during iof.src.Close() %v\n", recovered)
+	//		fmt.Printf("(iof *iodup) recovering from panic during iof.src.Close() %v\n", recovered)
 	//	}
 	//}()
 	//iof.src.Close()

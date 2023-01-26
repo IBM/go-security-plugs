@@ -1,4 +1,4 @@
-// iofilter can help filter data arriving from an io.ReadCloser
+// iodup can help filter data arriving from an io.ReadCloser
 // It allows wraping an existing io.ReadCloser provider and filter
 // the data before exposing it it up the chain.
 package iodup
@@ -67,11 +67,11 @@ func TestNewBadReader(t *testing.T) {
 		}
 
 		if err := r1.Output[0].Close(); err != nil {
-			t.Errorf("iofilter.Output[0].Close() error = %v", err)
+			t.Errorf("iodup.Output[0].Close() error = %v", err)
 		}
 
 		if err := r1.Output[1].Close(); err != nil {
-			t.Errorf("iofilter.Output[1].Close() error = %v", err)
+			t.Errorf("iodup.Output[1].Close() error = %v", err)
 		}
 
 		ur.closePanic = true
@@ -83,10 +83,10 @@ func TestNewBadReader(t *testing.T) {
 			t.Fatal(err)
 		}
 		if err := r2.Output[0].Close(); err != nil {
-			t.Errorf("iofilter.Close() error = %v", err)
+			t.Errorf("iodup.Close() error = %v", err)
 		}
 		if err := r2.Output[1].Close(); err != nil {
-			t.Errorf("iofilter.Close() error = %v", err)
+			t.Errorf("iodup.Close() error = %v", err)
 		}
 	})
 }
