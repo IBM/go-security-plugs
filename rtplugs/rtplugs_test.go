@@ -38,7 +38,7 @@ var testconfigAll string
 var emptytestconfig string
 var falsetestconfig string
 
-//var wtest http.ResponseWriter
+// var wtest http.ResponseWriter
 var reqtest *http.Request
 var reqtestBlock *http.Request
 
@@ -46,7 +46,7 @@ var resptest *http.Response
 
 //var errTest = "fake error"
 
-//var etest error
+// var etest error
 type dLog struct{}
 
 func (dLog) Debugf(format string, args ...interface{}) {
@@ -94,6 +94,8 @@ func InitializeEnv(params ...string) {
 		os.Setenv("RTPLUGS", testconfig)
 	}
 
+	os.Setenv("NAMESPACE", "myns")
+	os.Setenv("SERVICENAME", "myid")
 	os.Setenv("RT_GATE_PANIC_INIT", "false")
 	os.Setenv("RT_GATE_PANIC_SHUTDOWN", "false")
 	os.Setenv("RT_GATE_PANIC_REQ", "false")

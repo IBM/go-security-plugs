@@ -18,7 +18,7 @@ func multiTestReader(iod *Iodup, msg string) error {
 	for i := 0; i < int(iod.numOutputs); i++ {
 		go func(r io.ReadCloser, msg string) {
 			errCh <- iotest.TestReader(r, []byte(msg))
-		}(&iod.Output[i], msg)
+		}(iod.Output[i], msg)
 	}
 	for i := 0; i < int(iod.numOutputs); i++ {
 		err := <-errCh
@@ -58,11 +58,11 @@ func TestNewBadReader(t *testing.T) {
 		ur.closePanic = false
 		r1 := New(ur)
 
-		if err := iotest.TestReader(&r1.Output[0], []byte("")); err != nil {
+		if err := iotest.TestReader(r1.Output[0], []byte("")); err != nil {
 			t.Fatal(err)
 		}
 
-		if err := iotest.TestReader(&r1.Output[1], []byte("")); err != nil {
+		if err := iotest.TestReader(r1.Output[1], []byte("")); err != nil {
 			t.Fatal(err)
 		}
 
@@ -76,10 +76,10 @@ func TestNewBadReader(t *testing.T) {
 
 		ur.closePanic = true
 		r2 := New(ur, 2, 7)
-		if err := iotest.TestReader(&r2.Output[0], []byte("")); err != nil {
+		if err := iotest.TestReader(r2.Output[0], []byte("")); err != nil {
 			t.Fatal(err)
 		}
-		if err := iotest.TestReader(&r2.Output[1], []byte("")); err != nil {
+		if err := iotest.TestReader(r2.Output[1], []byte("")); err != nil {
 			t.Fatal(err)
 		}
 		if err := r2.Output[0].Close(); err != nil {
@@ -87,6 +87,16 @@ func TestNewBadReader(t *testing.T) {
 		}
 		if err := r2.Output[1].Close(); err != nil {
 			t.Errorf("iodup.Close() error = %v", err)
+		}
+	})
+}
+
+func TestNewNil(t *testing.T) {
+	t.Run("", func(t *testing.T) {
+		r := New(nil)
+		if r.Output[0] != nil || r.Output[1] != nil {
+			fmt.Printf("%v\n", r.Output)
+			t.Fatal("Expected nil in nil out")
 		}
 	})
 }
