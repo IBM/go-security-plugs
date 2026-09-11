@@ -25,17 +25,18 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/clock"
+	"k8s.io/utils/clock"
 	"knative.dev/pkg/websocket"
 )
 
+// TimeoutFunc returns the timeout duration to be used by the timeout handler.
+type TimeoutFunc func(req *http.Request) (time.Duration, time.Duration, time.Duration)
+
 type timeoutHandler struct {
-	handler            http.Handler
-	firstByteTimeout   time.Duration
-	idleTimeout        time.Duration
-	maxDurationTimeout time.Duration
-	body               string
-	clock              clock.Clock
+	handler     http.Handler
+	timeoutFunc TimeoutFunc
+	body        string
+	clock       clock.Clock
 }
 
 // NewTimeoutHandler returns a Handler that runs `h` with the
@@ -54,14 +55,12 @@ type timeoutHandler struct {
 // https://golang.org/pkg/net/http/#Handler.
 //
 // The implementation is largely inspired by http.TimeoutHandler.
-func NewTimeoutHandler(h http.Handler, msg string, firstByteTimeout time.Duration, idleTimeout time.Duration, maxDurationTimeout time.Duration) http.Handler {
+func NewTimeoutHandler(h http.Handler, msg string, timeoutFunc TimeoutFunc) http.Handler {
 	return &timeoutHandler{
-		handler:            h,
-		body:               msg,
-		firstByteTimeout:   firstByteTimeout,
-		idleTimeout:        idleTimeout,
-		maxDurationTimeout: maxDurationTimeout,
-		clock:              clock.RealClock{},
+		handler:     h,
+		body:        msg,
+		timeoutFunc: timeoutFunc,
+		clock:       clock.RealClock{},
 	}
 }
 
@@ -69,16 +68,18 @@ func (h *timeoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
-	firstByteTimeout := getTimer(h.clock, h.firstByteTimeout)
-	var firstByteTimeoutDrained bool
+	revTimeout, revResponseStartTimeout, revIdleTimeout := h.timeoutFunc(r)
+
+	timeout := getTimer(h.clock, revTimeout)
+	var timeoutDrained bool
 	defer func() {
-		putTimer(firstByteTimeout, firstByteTimeoutDrained)
+		putTimer(timeout, timeoutDrained)
 	}()
 
 	var idleTimeout clock.Timer
 	var idleTimeoutDrained bool
-	if h.idleTimeout > 0 {
-		idleTimeout = getTimer(h.clock, h.idleTimeout)
+	if revIdleTimeout > 0 {
+		idleTimeout = getTimer(h.clock, revIdleTimeout)
 		defer func() {
 			putTimer(idleTimeout, idleTimeoutDrained)
 		}()
@@ -93,17 +94,17 @@ func (h *timeoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	done := make(chan interface{})
 	tw := &timeoutWriter{w: w, clock: h.clock}
 
-	var maxDurationTimeout clock.Timer
-	var maxDurationTimeoutDrained bool
-	if h.maxDurationTimeout > 0 {
-		maxDurationTimeout = getTimer(h.clock, h.maxDurationTimeout)
+	var responseStartTimeout clock.Timer
+	var responseStartTimeoutDrained bool
+	if revResponseStartTimeout > 0 {
+		responseStartTimeout = getTimer(h.clock, revResponseStartTimeout)
 		defer func() {
-			putTimer(maxDurationTimeout, maxDurationTimeoutDrained)
+			putTimer(responseStartTimeout, responseStartTimeoutDrained)
 		}()
 	}
-	var maxDurationTimeoutCh <-chan time.Time
-	if maxDurationTimeout != nil {
-		maxDurationTimeoutCh = maxDurationTimeout.C()
+	var responseStartTimeoutCh <-chan time.Time
+	if responseStartTimeout != nil {
+		responseStartTimeoutCh = responseStartTimeout.C()
 	}
 
 	go func() {
@@ -124,22 +125,22 @@ func (h *timeoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				panic(p)
 			}
 			return
-		case <-firstByteTimeout.C():
-			firstByteTimeoutDrained = true
-			if tw.tryFirstByteTimeoutAndWriteError(h.body) {
+		case <-timeout.C():
+			timeoutDrained = true
+			if tw.tryTimeoutAndWriteError(h.body) {
 				return
 			}
 		case now := <-idleTimeoutCh:
-			timedOut, timeToNextTimeout := tw.tryIdleTimeoutAndWriteError(now, h.idleTimeout, h.body)
+			timedOut, timeToNextTimeout := tw.tryIdleTimeoutAndWriteError(now, revIdleTimeout, h.body)
 			if timedOut {
 				idleTimeoutDrained = true
 				return
 			}
 			idleTimeout.Reset(timeToNextTimeout)
-		case <-maxDurationTimeoutCh:
-			timedOut := tw.maxDurationTimeoutAndWriteError(h.body)
+		case <-responseStartTimeoutCh:
+			timedOut := tw.tryResponseStartTimeoutAndWriteError(h.body)
 			if timedOut {
-				maxDurationTimeoutDrained = true
+				responseStartTimeoutDrained = true
 				return
 			}
 		}
@@ -208,13 +209,31 @@ func (tw *timeoutWriter) WriteHeader(code int) {
 	tw.w.WriteHeader(code)
 }
 
-// tryFirstByteTimeoutAndWriteError writes an error to the responsewriter if
+// tryTimeoutAndWriteError writes an error to the responsewriter if
 // nothing has been written to the writer before. Returns whether
 // an error was written or not.
 //
 // If this writes an error, all subsequent calls to Write will
 // result in http.ErrHandlerTimeout.
-func (tw *timeoutWriter) tryFirstByteTimeoutAndWriteError(msg string) bool {
+func (tw *timeoutWriter) tryTimeoutAndWriteError(msg string) bool {
+	tw.mu.Lock()
+	defer tw.mu.Unlock()
+
+	if tw.lastWriteTime.IsZero() {
+		tw.timeoutAndWriteError(msg)
+		return true
+	}
+
+	return false
+}
+
+// tryResponseStartTimeoutAndWriteError writes an error to the responsewriter if
+// the response has not started responding before. Returns whether an error was
+// written or not.
+//
+// If this writes an error, all subsequent calls to Write will
+// result in http.ErrHandlerTimeout.
+func (tw *timeoutWriter) tryResponseStartTimeoutAndWriteError(msg string) bool {
 	tw.mu.Lock()
 	defer tw.mu.Unlock()
 
@@ -243,13 +262,6 @@ func (tw *timeoutWriter) tryIdleTimeoutAndWriteError(curTime time.Time, idleTime
 	}
 
 	return false, idleTimeout - timeSinceLastWrite
-}
-
-func (tw *timeoutWriter) maxDurationTimeoutAndWriteError(msg string) bool {
-	tw.mu.Lock()
-	defer tw.mu.Unlock()
-	tw.timeoutAndWriteError(msg)
-	return true
 }
 
 func (tw *timeoutWriter) timeoutAndWriteError(msg string) {
