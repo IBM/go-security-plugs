@@ -1,4 +1,4 @@
-# Copyright 2022 The OpenZipkin Authors
+# Copyright 2021 The OpenZipkin Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,8 +16,7 @@
 
 .PHONY: test
 test:
-	# MallocNanoZone env var avoids problems in macOS Monterey: golang/go#49138
-	MallocNanoZone=0 go test -v -race -cover ./...
+	go test -v -race -cover ./...
 
 .PHONY: bench
 bench:
@@ -26,8 +25,8 @@ bench:
 .PHONY: protoc
 protoc:
 	protoc --go_out=module=github.com/openzipkin/zipkin-go:. proto/zipkin_proto3/zipkin.proto
-	protoc --go_out=module=github.com/openzipkin/zipkin-go:. proto/testing/*.proto
-	protoc --go-grpc_out=module=github.com/openzipkin/zipkin-go:. proto/testing/*.proto
+	protoc --go_out=module=github.com/openzipkin/zipkin-go:. proto/testing/service.proto
+	protoc --go-grpc_out=module=github.com/openzipkin/zipkin-go:. proto/testing/service.proto
 
 .PHONY: lint
 lint:

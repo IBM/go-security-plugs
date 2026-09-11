@@ -20,7 +20,6 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
-	"time"
 
 	prom "contrib.go.opencensus.io/exporter/prometheus"
 	"go.opencensus.io/resource"
@@ -42,7 +41,7 @@ func (emptyPromExporter) ExportView(viewData *view.Data) {
 	// a signal to enrich the internal Meters with Resource information.
 }
 
-// nolint: unparam // False positive of flagging the second result of this function unused.
+//nolint: unparam // False positive of flagging the second result of this function unused.
 func newPrometheusExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.Exporter, ResourceExporterFactory, error) {
 	e, err := prom.NewExporter(prom.Options{Namespace: config.component})
 	if err != nil {
@@ -84,9 +83,8 @@ func startNewPromSrv(e *prom.Exporter, host string, port int) *http.Server {
 		curPromSrv.Close()
 	}
 	curPromSrv = &http.Server{
-		Addr:              host + ":" + strconv.Itoa(port),
-		Handler:           sm,
-		ReadHeaderTimeout: time.Minute, //https://medium.com/a-journey-with-go/go-understand-and-mitigate-slowloris-attack-711c1b1403f6
+		Addr:    host + ":" + strconv.Itoa(port),
+		Handler: sm,
 	}
 	return curPromSrv
 }

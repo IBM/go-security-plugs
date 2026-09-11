@@ -18,7 +18,6 @@ package v1alpha1
 
 import (
 	"context"
-	"strings"
 
 	"knative.dev/pkg/apis"
 )
@@ -29,7 +28,7 @@ func (c *Certificate) Validate(ctx context.Context) *apis.FieldError {
 }
 
 // Validate inspects and validates CertificateSpec object.
-func (spec *CertificateSpec) Validate(_ context.Context) (all *apis.FieldError) {
+func (spec *CertificateSpec) Validate(ctx context.Context) (all *apis.FieldError) {
 	// Spec must have at least one DNS Name.
 	if len(spec.DNSNames) == 0 {
 		all = all.Also(apis.ErrMissingField("dnsNames"))
@@ -45,21 +44,5 @@ func (spec *CertificateSpec) Validate(_ context.Context) (all *apis.FieldError) 
 	if spec.SecretName == "" {
 		all = all.Also(apis.ErrMissingField("secretName"))
 	}
-
-	if spec.Domain != "" && len(spec.DNSNames) != 0 {
-		suffix := "." + spec.Domain
-		valid := false
-		for _, dnsName := range spec.DNSNames {
-			if strings.HasSuffix(dnsName, suffix) || dnsName == spec.Domain {
-				valid = true
-				break
-			}
-		}
-
-		if !valid {
-			all = all.Also(apis.ErrInvalidValue("domain", "domain must be a suffix of, or match exactly, at least one entry in dnsNames"))
-		}
-	}
-
 	return all
 }

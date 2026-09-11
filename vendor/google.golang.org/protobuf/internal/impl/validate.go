@@ -16,9 +16,9 @@ import (
 	"google.golang.org/protobuf/internal/flags"
 	"google.golang.org/protobuf/internal/genid"
 	"google.golang.org/protobuf/internal/strs"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
-	"google.golang.org/protobuf/runtime/protoiface"
+	pref "google.golang.org/protobuf/reflect/protoreflect"
+	preg "google.golang.org/protobuf/reflect/protoregistry"
+	piface "google.golang.org/protobuf/runtime/protoiface"
 )
 
 // ValidationStatus is the result of validating the wire-format encoding of a message.
@@ -37,10 +37,6 @@ const (
 
 	// ValidationValid indicates that unmarshaling the message will succeed.
 	ValidationValid
-
-	// ValidationWrongWireType indicates that a validated field does not have
-	// the expected wire type.
-	ValidationWrongWireType
 )
 
 func (v ValidationStatus) String() string {
@@ -60,24 +56,20 @@ func (v ValidationStatus) String() string {
 // of the message type.
 //
 // This function is exposed for testing.
-func Validate(mt protoreflect.MessageType, in protoiface.UnmarshalInput) (out protoiface.UnmarshalOutput, _ ValidationStatus) {
+func Validate(mt pref.MessageType, in piface.UnmarshalInput) (out piface.UnmarshalOutput, _ ValidationStatus) {
 	mi, ok := mt.(*MessageInfo)
 	if !ok {
 		return out, ValidationUnknown
 	}
 	if in.Resolver == nil {
-		in.Resolver = protoregistry.GlobalTypes
-	}
-	if in.Depth == 0 {
-		in.Depth = protowire.DefaultRecursionLimit
+		in.Resolver = preg.GlobalTypes
 	}
 	o, st := mi.validate(in.Buf, 0, unmarshalOptions{
 		flags:    in.Flags,
 		resolver: in.Resolver,
-		depth:    in.Depth,
 	})
 	if o.initialized {
-		out.Flags |= protoiface.UnmarshalInitialized
+		out.Flags |= piface.UnmarshalInitialized
 	}
 	return out, st
 }
@@ -114,22 +106,22 @@ const (
 	validationTypeMessageSetItem
 )
 
-func newFieldValidationInfo(mi *MessageInfo, si structInfo, fd protoreflect.FieldDescriptor, ft reflect.Type) validationInfo {
+func newFieldValidationInfo(mi *MessageInfo, si structInfo, fd pref.FieldDescriptor, ft reflect.Type) validationInfo {
 	var vi validationInfo
 	switch {
 	case fd.ContainingOneof() != nil && !fd.ContainingOneof().IsSynthetic():
 		switch fd.Kind() {
-		case protoreflect.MessageKind:
+		case pref.MessageKind:
 			vi.typ = validationTypeMessage
 			if ot, ok := si.oneofWrappersByNumber[fd.Number()]; ok {
 				vi.mi = getMessageInfo(ot.Field(0).Type)
 			}
-		case protoreflect.GroupKind:
+		case pref.GroupKind:
 			vi.typ = validationTypeGroup
 			if ot, ok := si.oneofWrappersByNumber[fd.Number()]; ok {
 				vi.mi = getMessageInfo(ot.Field(0).Type)
 			}
-		case protoreflect.StringKind:
+		case pref.StringKind:
 			if strs.EnforceUTF8(fd) {
 				vi.typ = validationTypeUTF8String
 			}
@@ -137,7 +129,7 @@ func newFieldValidationInfo(mi *MessageInfo, si structInfo, fd protoreflect.Fiel
 	default:
 		vi = newValidationInfo(fd, ft)
 	}
-	if fd.Cardinality() == protoreflect.Required {
+	if fd.Cardinality() == pref.Required {
 		// Avoid overflow. The required field check is done with a 64-bit mask, with
 		// any message containing more than 64 required fields always reported as
 		// potentially uninitialized, so it is not important to get a precise count
@@ -150,34 +142,22 @@ func newFieldValidationInfo(mi *MessageInfo, si structInfo, fd protoreflect.Fiel
 	return vi
 }
 
-func newValidationInfo(fd protoreflect.FieldDescriptor, ft reflect.Type) validationInfo {
+func newValidationInfo(fd pref.FieldDescriptor, ft reflect.Type) validationInfo {
 	var vi validationInfo
 	switch {
 	case fd.IsList():
 		switch fd.Kind() {
-		case protoreflect.MessageKind:
+		case pref.MessageKind:
 			vi.typ = validationTypeMessage
-
-			if ft.Kind() == reflect.Ptr {
-				// Repeated opaque message fields are *[]*T.
-				ft = ft.Elem()
-			}
-
 			if ft.Kind() == reflect.Slice {
 				vi.mi = getMessageInfo(ft.Elem())
 			}
-		case protoreflect.GroupKind:
+		case pref.GroupKind:
 			vi.typ = validationTypeGroup
-
-			if ft.Kind() == reflect.Ptr {
-				// Repeated opaque message fields are *[]*T.
-				ft = ft.Elem()
-			}
-
 			if ft.Kind() == reflect.Slice {
 				vi.mi = getMessageInfo(ft.Elem())
 			}
-		case protoreflect.StringKind:
+		case pref.StringKind:
 			vi.typ = validationTypeBytes
 			if strs.EnforceUTF8(fd) {
 				vi.typ = validationTypeUTF8String
@@ -195,31 +175,33 @@ func newValidationInfo(fd protoreflect.FieldDescriptor, ft reflect.Type) validat
 	case fd.IsMap():
 		vi.typ = validationTypeMap
 		switch fd.MapKey().Kind() {
-		case protoreflect.StringKind:
+		case pref.StringKind:
 			if strs.EnforceUTF8(fd) {
 				vi.keyType = validationTypeUTF8String
 			}
 		}
 		switch fd.MapValue().Kind() {
-		case protoreflect.MessageKind:
+		case pref.MessageKind:
 			vi.valType = validationTypeMessage
 			if ft.Kind() == reflect.Map {
 				vi.mi = getMessageInfo(ft.Elem())
 			}
-		case protoreflect.StringKind:
+		case pref.StringKind:
 			if strs.EnforceUTF8(fd) {
 				vi.valType = validationTypeUTF8String
 			}
 		}
 	default:
 		switch fd.Kind() {
-		case protoreflect.MessageKind:
+		case pref.MessageKind:
 			vi.typ = validationTypeMessage
-			vi.mi = getMessageInfo(ft)
-		case protoreflect.GroupKind:
+			if !fd.IsWeak() {
+				vi.mi = getMessageInfo(ft)
+			}
+		case pref.GroupKind:
 			vi.typ = validationTypeGroup
 			vi.mi = getMessageInfo(ft)
-		case protoreflect.StringKind:
+		case pref.StringKind:
 			vi.typ = validationTypeBytes
 			if strs.EnforceUTF8(fd) {
 				vi.typ = validationTypeUTF8String
@@ -260,9 +242,6 @@ func (mi *MessageInfo) validate(b []byte, groupTag protowire.Number, opts unmars
 	if groupTag > 0 {
 		states[0].typ = validationTypeGroup
 		states[0].endGroup = groupTag
-	}
-	if opts.depth--; opts.depth < 0 {
-		return out, ValidationInvalid
 	}
 	initialized := true
 	start := len(b)
@@ -325,6 +304,26 @@ State:
 				}
 				if f != nil {
 					vi = f.validation
+					if vi.typ == validationTypeMessage && vi.mi == nil {
+						// Probable weak field.
+						//
+						// TODO: Consider storing the results of this lookup somewhere
+						// rather than recomputing it on every validation.
+						fd := st.mi.Desc.Fields().ByNumber(num)
+						if fd == nil || !fd.IsWeak() {
+							break
+						}
+						messageName := fd.Message().FullName()
+						messageType, err := preg.GlobalTypes.FindMessageByName(messageName)
+						switch err {
+						case nil:
+							vi.mi, _ = messageType.(*MessageInfo)
+						case preg.NotFound:
+							vi.typ = validationTypeBytes
+						default:
+							return out, ValidationUnknown
+						}
+					}
 					break
 				}
 				// Possible extension field.
@@ -336,7 +335,7 @@ State:
 				// unmarshaling to begin failing. Supporting this requires some way to
 				// determine if the resolver is frozen.
 				xt, err := opts.resolver.FindExtensionByNumber(st.mi.Desc.FullName(), num)
-				if err != nil && err != protoregistry.NotFound {
+				if err != nil && err != preg.NotFound {
 					return out, ValidationUnknown
 				}
 				if err == nil {
@@ -458,13 +457,6 @@ State:
 						mi:      vi.mi,
 						tail:    b,
 					})
-					if vi.typ == validationTypeMessage ||
-						vi.typ == validationTypeGroup ||
-						vi.typ == validationTypeMap {
-						if opts.depth--; opts.depth < 0 {
-							return out, ValidationInvalid
-						}
-					}
 					b = v
 					continue State
 				case validationTypeRepeatedVarint:
@@ -513,9 +505,6 @@ State:
 						mi:       vi.mi,
 						endGroup: num,
 					})
-					if opts.depth--; opts.depth < 0 {
-						return out, ValidationInvalid
-					}
 					continue State
 				case flags.ProtoLegacy && vi.typ == validationTypeMessageSetItem:
 					typeid, v, n, err := messageset.ConsumeFieldValue(b, false)
@@ -524,7 +513,7 @@ State:
 					}
 					xt, err := opts.resolver.FindExtensionByNumber(st.mi.Desc.FullName(), typeid)
 					switch {
-					case err == protoregistry.NotFound:
+					case err == preg.NotFound:
 						b = b[n:]
 					case err != nil:
 						return out, ValidationUnknown
@@ -538,13 +527,6 @@ State:
 							mi:   xvi.mi,
 							tail: b[n:],
 						})
-						if xvi.typ == validationTypeMessage ||
-							xvi.typ == validationTypeGroup ||
-							xvi.typ == validationTypeMap {
-							if opts.depth--; opts.depth < 0 {
-								return out, ValidationInvalid
-							}
-						}
 						b = v
 						continue State
 					}
@@ -571,14 +553,12 @@ State:
 		switch st.typ {
 		case validationTypeMessage, validationTypeGroup:
 			numRequiredFields = int(st.mi.numRequiredFields)
-			opts.depth++
 		case validationTypeMap:
 			// If this is a map field with a message value that contains
 			// required fields, require that the value be present.
 			if st.mi != nil && st.mi.numRequiredFields > 0 {
 				numRequiredFields = 1
 			}
-			opts.depth++
 		}
 		// If there are more than 64 required fields, this check will
 		// always fail and we will report that the message is potentially

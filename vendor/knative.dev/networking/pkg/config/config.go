@@ -20,12 +20,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"net/url"
 	"strings"
 	"text/template"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/lru"
 	cm "knative.dev/pkg/configmap"
@@ -69,13 +68,7 @@ const (
 
 	// ServingInternalCertName is the name of secret contains certificates in serving
 	// system namespace.
-	//
-	// Deprecated: ServingInternalCertName is deprecated. Use ServingRoutingCertName instead.
 	ServingInternalCertName = "knative-serving-certs"
-
-	// ServingRoutingCertName is the name of secret contains certificates for Routing data in serving
-	// system namespace. (Used by Ingress GWs and Activator)
-	ServingRoutingCertName = "routing-serving-certs"
 )
 
 // Config Keys
@@ -87,16 +80,7 @@ const (
 
 	// AutoTLSKey is the name of the configuration entry
 	// that specifies enabling auto-TLS or not.
-	// Deprecated: please use ExternalDomainTLSKey.
 	AutoTLSKey = "auto-tls"
-
-	// ExternalDomainTLSKey is the name of the configuration entry
-	// that specifies if external-domain-tls is enabled or not.
-	ExternalDomainTLSKey = "external-domain-tls"
-
-	// ClusterLocalDomainTLSKey is the name of the configuration entry
-	// that specifies if cluster-local-domain-tls is enabled or not.
-	ClusterLocalDomainTLSKey = "cluster-local-domain-tls"
 
 	// DefaultCertificateClassKey is the name of the configuration entry
 	// that specifies the default Certificate.
@@ -140,24 +124,7 @@ const (
 
 	// InternalEncryptionKey is the name of the configuration whether
 	// internal traffic is encrypted or not.
-	// Deprecated: please use SystemInternalTLSKey.
 	InternalEncryptionKey = "internal-encryption"
-
-	// SystemInternalTLSKey is the name of the configuration whether
-	// traffic between Knative system components is encrypted or not.
-	SystemInternalTLSKey = "system-internal-tls"
-)
-
-// EncryptionConfig indicates the encryption configuration
-// used for TLS connections.
-type EncryptionConfig string
-
-const (
-	// EncryptionDisabled - TLS not used.
-	EncryptionDisabled EncryptionConfig = "disabled"
-
-	// EncryptionEnabled - TLS used. The client verifies the servers certificate.
-	EncryptionEnabled EncryptionConfig = "enabled"
 )
 
 // HTTPProtocol indicates a type of HTTP endpoint behavior
@@ -235,11 +202,7 @@ type Config struct {
 	TagTemplate string
 
 	// AutoTLS specifies if auto-TLS is enabled or not.
-	// Deprecated: please use ExternalDomainTLS instead.
 	AutoTLS bool
-
-	// ExternalDomainTLS specifies if external-domain-tls is enabled or not.
-	ExternalDomainTLS bool
 
 	// HTTPProtocol specifics the behavior of HTTP endpoint of Knative
 	// ingress.
@@ -288,15 +251,8 @@ type Config struct {
 	// not enabled. Defaults to "http".
 	DefaultExternalScheme string
 
-	// InternalEncryption specifies whether internal traffic is encrypted or not.
-	// Deprecated: please use SystemInternalTLSKey instead.
+	// DefaultExternal specifies whether internal traffic is encrypted or not.
 	InternalEncryption bool
-
-	// SystemInternalTLS specifies whether knative internal traffic is encrypted or not.
-	SystemInternalTLS EncryptionConfig
-
-	// ClusterLocalDomainTLS specifies whether cluster-local traffic is encrypted or not.
-	ClusterLocalDomainTLS EncryptionConfig
 }
 
 func defaultConfig() *Config {
@@ -306,24 +262,13 @@ func defaultConfig() *Config {
 		DomainTemplate:                DefaultDomainTemplate,
 		TagTemplate:                   DefaultTagTemplate,
 		AutoTLS:                       false,
-		ExternalDomainTLS:             false,
 		NamespaceWildcardCertSelector: nil,
 		HTTPProtocol:                  HTTPEnabled,
 		AutocreateClusterDomainClaims: false,
 		DefaultExternalScheme:         "http",
 		MeshCompatibilityMode:         MeshCompatibilityModeAuto,
 		InternalEncryption:            false,
-		SystemInternalTLS:             EncryptionDisabled,
-		ClusterLocalDomainTLS:         EncryptionDisabled,
 	}
-}
-
-// NewConfigFromConfigMap returns a Config for the given configmap
-func NewConfigFromConfigMap(config *corev1.ConfigMap) (*Config, error) {
-	if config == nil {
-		return NewConfigFromMap(nil)
-	}
-	return NewConfigFromMap(config.Data)
 }
 
 // NewConfigFromMap creates a Config from the supplied data.
@@ -379,22 +324,11 @@ func NewConfigFromMap(data map[string]string) (*Config, error) {
 	}
 	templateCache.Add(nc.TagTemplate, t)
 
-	// external-domain-tls and auto-tls
 	if val, ok := data["autoTLS"]; ok {
 		nc.AutoTLS = strings.EqualFold(val, "enabled")
 	}
 	if val, ok := data[AutoTLSKey]; ok {
 		nc.AutoTLS = strings.EqualFold(val, "enabled")
-	}
-	if val, ok := data[ExternalDomainTLSKey]; ok {
-		nc.ExternalDomainTLS = strings.EqualFold(val, "enabled")
-
-		// The new key takes precedence, but we support compatibility
-		// for code that has not updated to the new field yet.
-		nc.AutoTLS = nc.ExternalDomainTLS
-	} else {
-		// backward compatibility: if the new key is not set, use the value from the old key
-		nc.ExternalDomainTLS = nc.AutoTLS
 	}
 
 	var httpProtocol string
@@ -417,52 +351,7 @@ func NewConfigFromMap(data map[string]string) (*Config, error) {
 		return nil, fmt.Errorf("httpProtocol %s in config-network ConfigMap is not supported", data[HTTPProtocolKey])
 	}
 
-	switch strings.ToLower(data[SystemInternalTLSKey]) {
-	case "", string(EncryptionDisabled):
-		// If SystemInternalTLSKey is not set in the config-network, default is already
-		// set to EncryptionDisabled.
-		if nc.InternalEncryption {
-			// Backward compatibility
-			nc.SystemInternalTLS = EncryptionEnabled
-		}
-	case string(EncryptionEnabled):
-		nc.SystemInternalTLS = EncryptionEnabled
-
-		// The new key takes precedence, but we support compatibility
-		// for code that has not updated to the new field yet.
-		nc.InternalEncryption = true
-	default:
-		return nil, fmt.Errorf("%s with value: %q in config-network ConfigMap is not supported",
-			SystemInternalTLSKey, data[SystemInternalTLSKey])
-	}
-
-	switch strings.ToLower(data[ClusterLocalDomainTLSKey]) {
-	case "", string(EncryptionDisabled):
-		// If ClusterLocalDomainTLSKey is not set in the config-network, default is already
-		// set to EncryptionDisabled.
-	case string(EncryptionEnabled):
-		nc.ClusterLocalDomainTLS = EncryptionEnabled
-	default:
-		return nil, fmt.Errorf("%s with value: %q in config-network ConfigMap is not supported",
-			ClusterLocalDomainTLSKey, data[ClusterLocalDomainTLSKey])
-	}
-
 	return nc, nil
-}
-
-// InternalTLSEnabled returns whether InternalEncryption is enabled or not.
-// Deprecated: please use SystemInternalTLSEnabled()
-func (c *Config) InternalTLSEnabled() bool {
-	return tlsEnabled(c.SystemInternalTLS)
-}
-
-// SystemInternalTLSEnabled returns whether SystemInternalTLS is enabled or not.
-func (c *Config) SystemInternalTLSEnabled() bool {
-	return tlsEnabled(c.SystemInternalTLS)
-}
-
-func tlsEnabled(encryptionConfig EncryptionConfig) bool {
-	return encryptionConfig == EncryptionEnabled
 }
 
 // GetDomainTemplate returns the golang Template from the config map
@@ -529,7 +418,7 @@ func checkTagTemplate(t *template.Template) error {
 		Name: "foo",
 		Tag:  "v2",
 	}
-	return t.Execute(io.Discard, data)
+	return t.Execute(ioutil.Discard, data)
 }
 
 // asLabelSelector returns a LabelSelector extracted from a given configmap key.
